@@ -163,17 +163,15 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                                       s.shoesReceived,
                                     );
                               }
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Inventory data synced successfully')),
-                                );
-                              }
+                              if (!mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Inventory data synced successfully')),
+                              );
                             } catch (e) {
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Sync Error: $e')),
-                                );
-                              }
+                              if (!mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Sync Error: $e')),
+                              );
                             } finally {
                               if (mounted) setState(() => _isSaving = false);
                             }

@@ -17,8 +17,6 @@ import '../providers/auth_provider.dart';
 import '../models/app_models.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  // Use read here to avoid recreating the GoRouter instance on every auth change.
-  // The refreshListenable will still trigger redirects correctly.
   final authNotifier = ref.read(routerNotifierProvider);
 
   return GoRouter(
@@ -51,7 +49,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state, child) => TeacherShell(child: child),
         routes: [
           GoRoute(
-            path: '/teacher/home',
+            path: '/teacher',
             builder: (context, state) => const TeacherDashboardScreen(),
           ),
           GoRoute(
@@ -85,6 +83,7 @@ final routerNotifierProvider = ChangeNotifierProvider((ref) => RouterNotifier(re
 
 class RouterNotifier extends ChangeNotifier {
   final Ref _ref;
+
   RouterNotifier(this._ref) {
     _ref.listen(authStateProvider, (previous, next) {
       if (previous?.value != next.value) {
@@ -109,47 +108,31 @@ class RouterNotifier extends ChangeNotifier {
     final isSplash = state.matchedLocation == '/splash';
     final isLoggingIn = state.matchedLocation == '/login' ||
         state.matchedLocation == '/signup' ||
-        state.matchedLocation == '/forgot-password';
+        state.matchedLocation == '/forgot-password' ||
+        state.matchedLocation == '/verify-email';
 
-    // 1. If still loading auth state, stay on splash ONLY for a short while
-    if (authState.isLoading) {
-      return isSplash ? null : '/splash';
-    }
+    // Splash is a passive loading screen. Router never sends users there.
+    if (isSplash) return null;
 
-    // 2. Auth Logic
     if (user == null) {
-      // If we are on Splash but Auth is NOT loading and NOT logged in -> go to Login
-      if (isSplash) return '/login';
       return isLoggingIn ? null : '/login';
     }
 
-    // 3. Email Verification
-    if (!user.emailVerified) {
-      if (state.matchedLocation == '/verify-email') return null;
-      return '/verify-email';
-    }
-
-    // 4. Loading Profile (Database)
     if (profileState.isLoading || profileState.isRefreshing) {
-      // Use splash as a buffer while loading the database record
-      return isSplash ? null : '/splash';
+      return null;
     }
 
-    // 5. Profile Check & Immediate Redirect
-    // If profile is null but user is verified, they are likely a new user 
-    // whose profile is being created. Don't hang! Go to Home.
-    if (isLoggingIn || isSplash || state.matchedLocation == '/verify-email' || state.matchedLocation == '/') {
-      final target = profile?.role == UserRole.admin ? '/admin' : '/teacher/home';
+    if (isLoggingIn || state.matchedLocation == '/') {
+      final target = profile?.role == UserRole.admin ? '/admin' : '/teacher';
       debugPrint('DEBUG: [Router] Target path: $target');
       return target;
     }
 
-    // 6. Role-based Access Guard
     final isTeacherRoute = state.matchedLocation.startsWith('/teacher');
     final isAdminRoute = state.matchedLocation.startsWith('/admin');
 
     if (profile?.role == UserRole.admin && isTeacherRoute) return '/admin';
-    if (profile?.role == UserRole.teacher && isAdminRoute) return '/teacher/home';
+    if (profile?.role == UserRole.teacher && isAdminRoute) return '/teacher';
 
     return null;
   }
@@ -167,7 +150,7 @@ class _TeacherShellState extends State<TeacherShell> {
   int _currentIndex = 0;
 
   final List<String> _routes = [
-    '/teacher/home',
+    '/teacher',
     '/teacher/attendance',
     '/teacher/mdm',
     '/teacher/inventory',

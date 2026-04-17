@@ -13,8 +13,7 @@ class SignUpScreen extends ConsumerStatefulWidget {
   ConsumerState<SignUpScreen> createState() => _SignUpScreenState();
 }
 
-class _SignUpScreenState extends ConsumerState<SignUpScreen> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   final _formKey = GlobalKey<FormState>();
 
   final _emailController = TextEditingController();
@@ -25,17 +24,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> with SingleTickerPr
   final _districtController = TextEditingController();
   final _blockController = TextEditingController();
   final _addressController = TextEditingController();
-  final _schoolCodeController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-  }
 
   @override
   void dispose() {
-    _tabController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _nameController.dispose();
@@ -44,34 +35,22 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> with SingleTickerPr
     _districtController.dispose();
     _blockController.dispose();
     _addressController.dispose();
-    _schoolCodeController.dispose();
     super.dispose();
   }
 
   Future<void> _handleSignUp() async {
     if (!_formKey.currentState!.validate()) return;
 
-    bool success = false;
-    if (_tabController.index == 0) {
-      success = await ref.read(authNotifierProvider.notifier).signUpAdmin(
-            email: _emailController.text,
-            password: _passwordController.text,
-            fullName: _nameController.text,
-            phone: _phoneController.text,
-            schoolName: _schoolNameController.text,
-            district: _districtController.text,
-            block: _blockController.text,
-            address: _addressController.text,
-          );
-    } else {
-      success = await ref.read(authNotifierProvider.notifier).signUpTeacher(
-            email: _emailController.text,
-            password: _passwordController.text,
-            fullName: _nameController.text,
-            phone: _phoneController.text,
-            schoolCode: _schoolCodeController.text,
-          );
-    }
+    final success = await ref.read(authNotifierProvider.notifier).signUpAdmin(
+          email: _emailController.text,
+          password: _passwordController.text,
+          fullName: _nameController.text,
+          phone: _phoneController.text,
+          schoolName: _schoolNameController.text,
+          district: _districtController.text,
+          block: _blockController.text,
+          address: _addressController.text,
+        );
 
     if (success && mounted) {
       context.go('/verify-email');
@@ -115,23 +94,33 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> with SingleTickerPr
                 ),
                 const SizedBox(height: 32),
                 Container(
-                  height: 50,
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: AppColors.backgroundGray,
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.borderGray),
                   ),
-                  child: TabBar(
-                    controller: _tabController,
-                    indicator: BoxDecoration(
-                      color: AppColors.navyPrimary,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    labelColor: Colors.white,
-                    unselectedLabelColor: AppColors.textGray,
-                    labelStyle: GoogleFonts.inter(fontWeight: FontWeight.w600),
-                    tabs: [
-                      Tab(text: l10n.roleAdmin),
-                      Tab(text: l10n.roleTeacher),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Public registration is available for administrators only.',
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Teacher accounts should be created from an authenticated admin workflow to protect existing sessions and school access.',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: AppColors.textGray,
+                          height: 1.4,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -156,56 +145,36 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> with SingleTickerPr
                   decoration: const InputDecoration(hintText: '+91 00000 00000', prefixIcon: Icon(Icons.phone_outlined)),
                   validator: (v) => v!.isEmpty ? 'Enter phone' : null,
                 ),
-                AnimatedBuilder(
-                  animation: _tabController,
-                  builder: (context, _) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (_tabController.index == 0) ...[
-                          const SizedBox(height: 20),
-                          _buildLabel('School Name'),
-                          TextFormField(
-                            controller: _schoolNameController,
-                            decoration: const InputDecoration(hintText: 'Government School', prefixIcon: Icon(Icons.school_outlined)),
-                            validator: (v) => v!.isEmpty ? 'Enter school name' : null,
-                          ),
-                          const SizedBox(height: 20),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _buildLabel('District'),
-                                    TextFormField(controller: _districtController, validator: (v) => v!.isEmpty ? 'Required' : null),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _buildLabel('Block'),
-                                    TextFormField(controller: _blockController, validator: (v) => v!.isEmpty ? 'Required' : null),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ] else ...[
-                          const SizedBox(height: 20),
-                          _buildLabel('School Code'),
-                          TextFormField(
-                            controller: _schoolCodeController,
-                            decoration: const InputDecoration(hintText: '6-digit unique code', prefixIcon: Icon(Icons.vpn_key_outlined)),
-                            validator: (v) => v!.isEmpty ? 'Enter school code' : null,
-                          ),
+                const SizedBox(height: 20),
+                _buildLabel('School Name'),
+                TextFormField(
+                  controller: _schoolNameController,
+                  decoration: const InputDecoration(hintText: 'Government School', prefixIcon: Icon(Icons.school_outlined)),
+                  validator: (v) => v!.isEmpty ? 'Enter school name' : null,
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildLabel('District'),
+                          TextFormField(controller: _districtController, validator: (v) => v!.isEmpty ? 'Required' : null),
                         ],
-                      ],
-                    );
-                  },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildLabel('Block'),
+                          TextFormField(controller: _blockController, validator: (v) => v!.isEmpty ? 'Required' : null),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 20),
                 _buildLabel(l10n.password),

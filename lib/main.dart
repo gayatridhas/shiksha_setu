@@ -52,7 +52,9 @@ void main() async {
     debugPrint('Error details: $e');
     debugPrint('Stack trace: $stack');
     FirebaseInitState.setError(
-      'Firebase is not configured for this platform yet. Update lib/firebase_options.dart with real app credentials.',
+      kIsWeb
+          ? 'Firebase web initialization failed. Check your web Firebase project settings.'
+          : 'This app is currently configured for web only. Add Android/iOS Firebase setup later.',
     );
   }
   

@@ -115,18 +115,17 @@ class _MdmEntryScreenState extends ConsumerState<MdmEntryScreen> {
                             notes: _notesCtrl.text,
                             submittedBy: profile.fullName,
                           );
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('MDM entry submitted successfully')),
-                        );
-                        Navigator.pop(context);
-                      }
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('MDM entry submitted successfully')),
+                      );
+                      if (!mounted) return;
+                      Navigator.pop(context);
                     } catch (e) {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Error: $e')),
-                        );
-                      }
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error: $e')),
+                      );
                     } finally {
                       if (mounted) setState(() => _isSubmitting = false);
                     }

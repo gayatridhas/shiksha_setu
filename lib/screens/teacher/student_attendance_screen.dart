@@ -173,6 +173,7 @@ class _StudentAttendanceScreenState extends ConsumerState<StudentAttendanceScree
             leave: leave,
             onSubmit: () async {
               final confirmed = await _showConfirmDialog(context, present, total);
+              if (!mounted) return;
               if (confirmed == true) {
                 try {
                   await ref.read(firestoreServiceProvider).submitAttendance(
@@ -181,18 +182,17 @@ class _StudentAttendanceScreenState extends ConsumerState<StudentAttendanceScree
                         localStudents,
                         profile.fullName,
                       );
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Attendance submitted successfully')),
-                    );
-                    context.pop();
-                  }
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Attendance submitted successfully')),
+                  );
+                  if (!mounted) return;
+                  context.pop();
                 } catch (e) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error: $e')),
-                    );
-                  }
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: $e')),
+                  );
                 }
               }
             },

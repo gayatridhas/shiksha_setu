@@ -83,16 +83,23 @@ class AuthService {
     required String address,
   }) async {
     if (!_isFirebaseInitialized) return AuthResult.error('Firebase not configured.');
+    User? createdUser;
     try {
       final cred = await _auth.createUserWithEmailAndPassword(
         email: email.trim(),
         password: password,
       );
-      final uid = cred.user!.uid;
-      final schoolCode = _generateSchoolCode();
+      createdUser = cred.user;
+      if (createdUser == null) {
+        return AuthResult.error('Sign-up failed. Please try again.');
+      }
 
+      final uid = createdUser.uid;
+      final schoolCode = _generateSchoolCode();
       final schoolRef = _db.collection('schools').doc();
-      await schoolRef.set({
+      final batch = _db.batch();
+
+      batch.set(schoolRef, {
         'name': schoolName,
         'district': district,
         'block': block,
@@ -105,7 +112,7 @@ class AuthService {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      await _db.collection('users').doc(uid).set({
+      batch.set(_db.collection('users').doc(uid), {
         'fullName': fullName,
         'email': email.trim(),
         'phone': phone,
@@ -116,13 +123,16 @@ class AuthService {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      await cred.user!.updateDisplayName(fullName);
-      await cred.user!.sendEmailVerification();
+      await batch.commit();
+      await createdUser.updateDisplayName(fullName);
+      await createdUser.sendEmailVerification();
 
-      return AuthResult.success(cred.user!);
+      return AuthResult.success(createdUser);
     } on FirebaseAuthException catch (e) {
+      await _cleanupFailedSignup(createdUser);
       return AuthResult.error(_authErrorMessage(e.code));
     } catch (e) {
+      await _cleanupFailedSignup(createdUser);
       return AuthResult.error('Sign-up failed: $e');
     }
   }
@@ -137,62 +147,9 @@ class AuthService {
     String classId = '',
     String subject = '',
   }) async {
-    if (!_isFirebaseInitialized) return AuthResult.error('Firebase not configured.');
-    try {
-      final schoolQuery = await _db
-          .collection('schools')
-          .where('schoolCode', isEqualTo: schoolCode.toUpperCase().trim())
-          .limit(1)
-          .get();
-
-      if (schoolQuery.docs.isEmpty) {
-        return AuthResult.error('Invalid school code. Please check and try again.');
-      }
-
-      final schoolDoc = schoolQuery.docs.first;
-      final schoolId = schoolDoc.id;
-      final schoolName = schoolDoc.data()['name'] ?? '';
-
-      final cred = await _auth.createUserWithEmailAndPassword(
-        email: email.trim(),
-        password: password,
-      );
-      final uid = cred.user!.uid;
-
-      await _db.collection('users').doc(uid).set({
-        'fullName': fullName,
-        'email': email.trim(),
-        'phone': phone,
-        'role': 'teacher',
-        'schoolId': schoolId,
-        'schoolName': schoolName,
-        'classId': classId,
-        'subject': subject,
-        'emailVerified': false,
-        'todayStatus': 'present',
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-
-      await _db.collection('schools').doc(schoolId).collection('staff').doc(uid).set({
-        'fullName': fullName,
-        'email': email.trim(),
-        'phone': phone,
-        'subject': subject,
-        'grade': classId,
-        'todayStatus': 'present',
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-
-      await schoolDoc.reference.update({'totalStaff': FieldValue.increment(1)});
-      await cred.user!.updateDisplayName(fullName);
-      await cred.user!.sendEmailVerification();
-
-      return AuthResult.success(cred.user!);
-    } on FirebaseAuthException catch (e) {
-      return AuthResult.error(_authErrorMessage(e.code));
-    } catch (e) {
-      return AuthResult.error('Sign-up failed: $e');
-    }
+    return AuthResult.error(
+      'Teacher self-sign-up is disabled. Please ask a school administrator to create your account.',
+    );
   }
 
   Future<AuthResult> sendPasswordReset(String email) async {
@@ -302,6 +259,16 @@ class AuthService {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     final rnd = Random.secure();
     return List.generate(6, (_) => chars[rnd.nextInt(chars.length)]).join();
+  }
+
+  Future<void> _cleanupFailedSignup(User? user) async {
+    if (user == null) return;
+
+    try {
+      await user.delete();
+    } catch (e) {
+      debugPrint('WARNING: Failed to clean up partially created signup user: $e');
+    }
   }
 
   String _authErrorMessage(String code) {

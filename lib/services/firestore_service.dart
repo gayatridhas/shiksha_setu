@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import '../models/app_models.dart';
 
 class FirestoreService {
@@ -113,6 +114,11 @@ class FirestoreService {
     String submittedBy,
   ) async {
     if (!_isFirebaseInitialized) return;
+    final hasIncompleteAttendance = students.any((student) => student.status == null);
+    if (hasIncompleteAttendance) {
+      throw ArgumentError('Attendance is incomplete for one or more students.');
+    }
+
     final dateKey = _today;
     final batch = _db.batch();
     final dayRef = _db
@@ -134,7 +140,6 @@ class FirestoreService {
     );
 
     for (final s in students) {
-      if (s.status == null) continue;
       final entryRef = dayRef.collection('entries').doc(s.studentId);
       batch.set(entryRef, {
         'studentId': s.studentId,
@@ -205,6 +210,73 @@ class FirestoreService {
       }
     }
     return map;
+  }
+
+  Future<Map<String, int>> getDailyAttendancePresentCounts(
+    String schoolId,
+    String classId, {
+    int days = 7,
+  }) async {
+    if (!_isFirebaseInitialized) return {};
+    final counts = <String, int>{};
+
+    for (int i = days - 1; i >= 0; i--) {
+      final date = DateTime.now().subtract(Duration(days: i));
+      final dateKey = DateFormat('yyyy-MM-dd').format(date);
+      final snap = await _db
+          .collection('schools')
+          .doc(schoolId)
+          .collection('attendance')
+          .doc(dateKey)
+          .collection('entries')
+          .where('classId', isEqualTo: classId)
+          .where('status', isEqualTo: 'present')
+          .get();
+      counts[dateKey] = snap.docs.length;
+    }
+
+    return counts;
+  }
+
+  Future<bool> hasAttendanceForToday(String schoolId, String classId) async {
+    if (!_isFirebaseInitialized) return false;
+    final snap = await _db
+        .collection('schools')
+        .doc(schoolId)
+        .collection('attendance')
+        .doc(_today)
+        .collection('entries')
+        .where('classId', isEqualTo: classId)
+        .limit(1)
+        .get();
+    return snap.docs.isNotEmpty;
+  }
+
+  Future<List<MdmClassRecord>> getMdmRecordsForClassRange(
+    String schoolId,
+    String classId, {
+    int days = 7,
+  }) async {
+    if (!_isFirebaseInitialized) return [];
+    final records = <MdmClassRecord>[];
+
+    for (int i = days - 1; i >= 0; i--) {
+      final dateKey = DateFormat('yyyy-MM-dd')
+          .format(DateTime.now().subtract(Duration(days: i)));
+      final doc = await _db
+          .collection('schools')
+          .doc(schoolId)
+          .collection('mdm')
+          .doc(dateKey)
+          .collection('classes')
+          .doc(classId)
+          .get();
+      if (doc.exists) {
+        records.add(MdmClassRecord.fromFirestore(doc));
+      }
+    }
+
+    return records;
   }
 
   // ─── MDM ─────────────────────────────────────────────────────
@@ -293,6 +365,107 @@ class FirestoreService {
     return result;
   }
 
+  Future<int> getActiveStudentCountForClass(String schoolId, String classId) async {
+    if (!_isFirebaseInitialized) return 0;
+    final snap = await _db
+        .collection('schools')
+        .doc(schoolId)
+        .collection('students')
+        .where('classId', isEqualTo: classId)
+        .where('isActive', isEqualTo: true)
+        .get();
+    return snap.docs.length;
+  }
+
+  Future<int> getTodayPresentCountForClass(String schoolId, String classId) async {
+    if (!_isFirebaseInitialized) return 0;
+    final snap = await _db
+        .collection('schools')
+        .doc(schoolId)
+        .collection('attendance')
+        .doc(_today)
+        .collection('entries')
+        .where('classId', isEqualTo: classId)
+        .where('status', isEqualTo: 'present')
+        .get();
+    return snap.docs.length;
+  }
+
+  Future<MdmClassRecord?> getTodayMdmRecordForClass(
+    String schoolId,
+    String classId,
+  ) async {
+    if (!_isFirebaseInitialized) return null;
+    final doc = await _db
+        .collection('schools')
+        .doc(schoolId)
+        .collection('mdm')
+        .doc(_today)
+        .collection('classes')
+        .doc(classId)
+        .get();
+
+    if (!doc.exists) return null;
+    return MdmClassRecord.fromFirestore(doc);
+  }
+
+  Future<void> saveTeacherMdmEntry({
+    required String schoolId,
+    required String classId,
+    required String className,
+    required int mealCount,
+    required int presentCount,
+    required String menu,
+    required String notes,
+    required String submittedBy,
+    String photoUrl = '',
+  }) async {
+    if (!_isFirebaseInitialized) return;
+    final dayRef = _db
+        .collection('schools')
+        .doc(schoolId)
+        .collection('mdm')
+        .doc(_today);
+    final classRef = dayRef.collection('classes').doc(classId);
+
+    final existingEntries = await dayRef.collection('classes').get();
+    final otherMealsTotal = existingEntries.docs.fold<int>(0, (sum, doc) {
+      if (doc.id == classId) {
+        return sum;
+      }
+      return sum + ((doc.data()['mealCount'] as num?)?.toInt() ?? 0);
+    });
+
+    final batch = _db.batch();
+    batch.set(
+      dayRef,
+      {
+        'date': Timestamp.fromDate(DateTime.now()),
+        'schoolId': schoolId,
+        'totalMeals': otherMealsTotal + mealCount,
+        'submittedAt': FieldValue.serverTimestamp(),
+      },
+      SetOptions(merge: true),
+    );
+    batch.set(
+      classRef,
+      {
+        'classId': classId,
+        'className': className,
+        'mealCount': mealCount,
+        'presentCount': presentCount,
+        'menu': menu,
+        'notes': notes,
+        'photoUrl': photoUrl,
+        'submittedBy': submittedBy,
+        'submittedAt': FieldValue.serverTimestamp(),
+        'discrepancy': mealCount > presentCount,
+      },
+      SetOptions(merge: true),
+    );
+    await batch.commit();
+  }
+
   // ─── Staff / Leave Requests ───────────────────────────────────
   Stream<List<StaffModel>> staffStream(String schoolId) {
     if (!_isFirebaseInitialized) return Stream.value([]);
@@ -377,11 +550,38 @@ class FirestoreService {
         .doc(year)
         .collection('distributions')
         .doc(studentId)
-        .update({
+        .set({
       'uniformReceived': uniformReceived,
       'shoesReceived': shoesReceived,
       'updatedAt': FieldValue.serverTimestamp(),
-    });
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> syncDistributionRecords(
+    String schoolId,
+    String year,
+    String classId,
+    List<DistributionStudentModel> students,
+  ) async {
+    if (!_isFirebaseInitialized) return;
+    final batch = _db.batch();
+    final distributionsRef = _db
+        .collection('schools')
+        .doc(schoolId)
+        .collection('inventory')
+        .doc(year)
+        .collection('distributions');
+
+    for (final student in students) {
+      final docRef = distributionsRef.doc(student.studentId);
+      batch.set(docRef, {
+        ...student.toFirestore(),
+        'classId': classId,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    }
+
+    await batch.commit();
   }
 
   // ─── Dashboard Stats ──────────────────────────────────────────

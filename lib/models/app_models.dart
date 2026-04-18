@@ -98,6 +98,7 @@ class SchoolModel {
   final int totalStudents;
   final int totalStaff;
   final String academicYear;
+  final List<String> menuItems;
 
   const SchoolModel({
     required this.schoolId,
@@ -109,6 +110,7 @@ class SchoolModel {
     this.totalStudents = 0,
     this.totalStaff = 0,
     this.academicYear = '2024-25',
+    this.menuItems = const [],
   });
 
   factory SchoolModel.fromFirestore(DocumentSnapshot doc) {
@@ -123,6 +125,9 @@ class SchoolModel {
       totalStudents: d['totalStudents'] ?? 0,
       totalStaff: d['totalStaff'] ?? 0,
       academicYear: d['academicYear'] ?? '2024-25',
+      menuItems: (d['menuItems'] as List<dynamic>? ?? const [])
+          .whereType<String>()
+          .toList(),
     );
   }
 
@@ -135,6 +140,7 @@ class SchoolModel {
     'totalStudents': totalStudents,
     'totalStaff': totalStaff,
     'academicYear': academicYear,
+    'menuItems': menuItems,
   };
 }
 
@@ -418,6 +424,49 @@ class MdmClassEntry {
   final String className;
   int mealCount;
   MdmClassEntry({required this.classId, required this.className, this.mealCount = 0});
+}
+
+class MdmClassRecord {
+  final String classId;
+  final String className;
+  final int mealCount;
+  final int presentCount;
+  final String menu;
+  final String notes;
+  final String submittedBy;
+  final DateTime submittedAt;
+  final bool discrepancy;
+  final String photoUrl;
+
+  const MdmClassRecord({
+    required this.classId,
+    required this.className,
+    required this.mealCount,
+    required this.presentCount,
+    required this.menu,
+    required this.notes,
+    required this.submittedBy,
+    required this.submittedAt,
+    required this.discrepancy,
+    this.photoUrl = '',
+  });
+
+  factory MdmClassRecord.fromFirestore(DocumentSnapshot doc) {
+    final d = doc.data() as Map<String, dynamic>;
+    return MdmClassRecord(
+      classId: d['classId'] ?? doc.id,
+      className: d['className'] ?? '',
+      mealCount: d['mealCount'] ?? 0,
+      presentCount: d['presentCount'] ?? 0,
+      menu: d['menu'] ?? '',
+      notes: d['notes'] ?? '',
+      submittedBy: d['submittedBy'] ?? '',
+      submittedAt:
+          (d['submittedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      discrepancy: d['discrepancy'] ?? false,
+      photoUrl: d['photoUrl'] ?? '',
+    );
+  }
 }
 
 // ─── Student Ledger (admin view) ──────────────────────────────

@@ -154,15 +154,12 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                           onSave: () async {
                             setState(() => _isSaving = true);
                             try {
-                              for (final s in students) {
-                                await ref.read(firestoreServiceProvider).updateDistribution(
-                                      profile.schoolId,
-                                      currentYear,
-                                      s.studentId,
-                                      s.uniformReceived,
-                                      s.shoesReceived,
-                                    );
-                              }
+                              await ref.read(firestoreServiceProvider).syncDistributionRecords(
+                                    profile.schoolId,
+                                    currentYear,
+                                    classId,
+                                    students,
+                                  );
                               if (!mounted) return;
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('Inventory data synced successfully')),

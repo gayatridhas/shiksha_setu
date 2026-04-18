@@ -62,6 +62,10 @@ class StudentAttendanceScreen extends ConsumerStatefulWidget {
 class _StudentAttendanceScreenState extends ConsumerState<StudentAttendanceScreen> {
   bool _isInitialized = false;
 
+  bool _isAttendanceComplete(List<StudentModel> students) {
+    return students.every((student) => student.status != null);
+  }
+
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(userProfileProvider).value;
@@ -172,6 +176,15 @@ class _StudentAttendanceScreenState extends ConsumerState<StudentAttendanceScree
             absent: absent,
             leave: leave,
             onSubmit: () async {
+              if (!_isAttendanceComplete(localStudents)) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please mark attendance for all students before submitting.'),
+                  ),
+                );
+                return;
+              }
+
               final confirmed = await _showConfirmDialog(context, present, total);
               if (!mounted) return;
               if (confirmed == true) {

@@ -3,6 +3,7 @@
 // ============================================================
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../core/utils/academic_year_utils.dart';
 
 // ─── Role ────────────────────────────────────────────────────
 enum UserRole { admin, teacher }
@@ -109,7 +110,7 @@ class SchoolModel {
     required this.schoolCode,
     this.totalStudents = 0,
     this.totalStaff = 0,
-    this.academicYear = '2024-25',
+    this.academicYear = '',
     this.menuItems = const [],
   });
 
@@ -124,7 +125,8 @@ class SchoolModel {
       schoolCode: d['schoolCode'] ?? '',
       totalStudents: d['totalStudents'] ?? 0,
       totalStaff: d['totalStaff'] ?? 0,
-      academicYear: d['academicYear'] ?? '2024-25',
+      academicYear:
+          d['academicYear'] ?? AcademicYearUtils.currentAcademicYear(),
       menuItems: (d['menuItems'] as List<dynamic>? ?? const [])
           .whereType<String>()
           .toList(),
@@ -139,7 +141,9 @@ class SchoolModel {
     'schoolCode': schoolCode,
     'totalStudents': totalStudents,
     'totalStaff': totalStaff,
-    'academicYear': academicYear,
+    'academicYear': academicYear.isEmpty
+        ? AcademicYearUtils.currentAcademicYear()
+        : academicYear,
     'menuItems': menuItems,
   };
 }
@@ -248,6 +252,39 @@ class AttendanceEntry {
     'timestamp': Timestamp.fromDate(timestamp),
     'isLocked': isLocked,
   };
+}
+
+class AttendanceClassSummary {
+  final String classId;
+  final String submittedBy;
+  final DateTime submittedAt;
+  final int presentCount;
+  final int absentCount;
+  final int leaveCount;
+
+  const AttendanceClassSummary({
+    required this.classId,
+    required this.submittedBy,
+    required this.submittedAt,
+    required this.presentCount,
+    required this.absentCount,
+    required this.leaveCount,
+  });
+
+  int get totalCount => presentCount + absentCount + leaveCount;
+
+  factory AttendanceClassSummary.fromFirestore(DocumentSnapshot doc) {
+    final d = doc.data() as Map<String, dynamic>;
+    return AttendanceClassSummary(
+      classId: d['classId'] ?? doc.id,
+      submittedBy: d['submittedBy'] ?? '',
+      submittedAt:
+          (d['submittedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      presentCount: d['presentCount'] ?? 0,
+      absentCount: d['absentCount'] ?? 0,
+      leaveCount: d['leaveCount'] ?? 0,
+    );
+  }
 }
 
 // ─── Staff ────────────────────────────────────────────────────
@@ -504,18 +541,24 @@ class StudentLedgerModel {
 class DistributionStudentModel {
   final String studentId;
   final String fullName;
+  final int rollNo;
   final String srn;
   bool uniformReceived;
   bool shoesReceived;
   final bool hasMismatch;
+  final String uniformSize;
+  final String shoesSize;
 
   DistributionStudentModel({
     required this.studentId,
     required this.fullName,
+    this.rollNo = 0,
     required this.srn,
     this.uniformReceived = false,
     this.shoesReceived = false,
     this.hasMismatch = false,
+    this.uniformSize = 'M',
+    this.shoesSize = '7',
   });
 
   factory DistributionStudentModel.fromFirestore(DocumentSnapshot doc) {
@@ -523,17 +566,23 @@ class DistributionStudentModel {
     return DistributionStudentModel(
       studentId: doc.id,
       fullName: d['fullName'] ?? '',
+      rollNo: d['rollNo'] ?? 0,
       srn: d['srn'] ?? '',
       uniformReceived: d['uniformReceived'] ?? false,
       shoesReceived: d['shoesReceived'] ?? false,
+      uniformSize: d['uniformSize'] ?? 'M',
+      shoesSize: d['shoesSize'] ?? '7',
     );
   }
 
   Map<String, dynamic> toFirestore() => {
     'fullName': fullName,
+    'rollNo': rollNo,
     'srn': srn,
     'uniformReceived': uniformReceived,
     'shoesReceived': shoesReceived,
+    'uniformSize': uniformSize,
+    'shoesSize': shoesSize,
   };
 }
 

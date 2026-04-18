@@ -8,6 +8,7 @@ import '../../providers/firestore_providers.dart';
 import '../../providers/locale_provider.dart';
 import '../../models/app_models.dart';
 import '../../widgets/initials_avatar.dart';
+import '../../core/utils/academic_year_utils.dart';
 
 class AdminHomeScreen extends ConsumerWidget {
   const AdminHomeScreen({super.key});
@@ -77,7 +78,7 @@ class AdminHomeScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '$school — Academic Year 2024-25',
+\ - Academic Year ',
                       style: GoogleFonts.inter(fontSize: 13, color: AppColors.textGray),
                     ),
                     const SizedBox(height: 24),

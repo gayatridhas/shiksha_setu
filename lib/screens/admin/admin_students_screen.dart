@@ -6,6 +6,7 @@ import '../../models/app_models.dart';
 import '../../widgets/initials_avatar.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/firestore_providers.dart';
+import '../../core/utils/academic_year_utils.dart';
 
 // --- Screen Providers ---
 final studentSearchProvider = StateProvider<String>((ref) => '');
@@ -154,7 +155,7 @@ class _LedgerBanner extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Student Ledger', style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white)),
-          Text('ACADEMIC SESSION 2024-25', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white.withOpacity(0.6), letterSpacing: 1.0)),
+          Text('ACADEMIC SESSION ', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white.withOpacity(0.6), letterSpacing: 1.0)),
           const SizedBox(height: 10),
           Row(
             children: [

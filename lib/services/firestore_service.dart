@@ -82,6 +82,24 @@ class FirestoreService {
     });
   }
 
+  Future<List<String>> getActiveClassIds(String schoolId) async {
+    if (!_isFirebaseInitialized) return [];
+    final snap = await _db
+        .collection('schools')
+        .doc(schoolId)
+        .collection('students')
+        .where('isActive', isEqualTo: true)
+        .get();
+
+    final classIds = snap.docs
+        .map((doc) => (doc.data()['classId'] as String?) ?? '')
+        .where((classId) => classId.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort();
+    return classIds;
+  }
+
   Future<void> updateStudent(String schoolId, String studentId, Map<String, dynamic> data) async {
     if (!_isFirebaseInitialized) return;
     await _db
@@ -126,6 +144,16 @@ class FirestoreService {
         .doc(schoolId)
         .collection('attendance')
         .doc(dateKey);
+    final classRef = dayRef.collection('classes').doc(classId);
+    final presentCount = students
+        .where((student) => student.status == AttendanceStatus.present)
+        .length;
+    final absentCount = students
+        .where((student) => student.status == AttendanceStatus.absent)
+        .length;
+    final leaveCount = students
+        .where((student) => student.status == AttendanceStatus.leave)
+        .length;
 
     batch.set(
       dayRef,
@@ -135,6 +163,18 @@ class FirestoreService {
         'submittedBy': submittedBy,
         'submittedAt': FieldValue.serverTimestamp(),
         'isLocked': false,
+      },
+      SetOptions(merge: true),
+    );
+    batch.set(
+      classRef,
+      {
+        'classId': classId,
+        'submittedBy': submittedBy,
+        'submittedAt': FieldValue.serverTimestamp(),
+        'presentCount': presentCount,
+        'absentCount': absentCount,
+        'leaveCount': leaveCount,
       },
       SetOptions(merge: true),
     );
@@ -391,6 +431,44 @@ class FirestoreService {
     return snap.docs.length;
   }
 
+  Future<List<AttendanceClassSummary>> getAttendanceSummariesForRange(
+    String schoolId, {
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    if (!_isFirebaseInitialized) return [];
+    final summaries = <AttendanceClassSummary>[];
+    final dayCount = to.difference(from).inDays;
+
+    for (int i = 0; i <= dayCount; i++) {
+      final dateKey =
+          DateFormat('yyyy-MM-dd').format(from.add(Duration(days: i)));
+      final snap = await _db
+          .collection('schools')
+          .doc(schoolId)
+          .collection('attendance')
+          .doc(dateKey)
+          .collection('classes')
+          .get();
+      summaries.addAll(snap.docs.map(AttendanceClassSummary.fromFirestore));
+    }
+
+    return summaries;
+  }
+
+  Future<List<AttendanceClassSummary>> getRecentAttendanceSummaries(
+    String schoolId, {
+    int days = 7,
+  }) async {
+    final from = DateTime.now().subtract(Duration(days: days - 1));
+    final to = DateTime.now();
+    return getAttendanceSummariesForRange(
+      schoolId,
+      from: DateTime(from.year, from.month, from.day),
+      to: DateTime(to.year, to.month, to.day),
+    );
+  }
+
   Future<MdmClassRecord?> getTodayMdmRecordForClass(
     String schoolId,
     String classId,
@@ -464,6 +542,67 @@ class FirestoreService {
       SetOptions(merge: true),
     );
     await batch.commit();
+  }
+
+  Future<List<MdmClassRecord>> getTodayMdmClassRecords(String schoolId) async {
+    if (!_isFirebaseInitialized) return [];
+    final snap = await _db
+        .collection('schools')
+        .doc(schoolId)
+        .collection('mdm')
+        .doc(_today)
+        .collection('classes')
+        .get();
+
+    return snap.docs.map(MdmClassRecord.fromFirestore).toList();
+  }
+
+  Future<List<MdmClassRecord>> getRecentMdmClassRecords(
+    String schoolId, {
+    int days = 7,
+  }) async {
+    if (!_isFirebaseInitialized) return [];
+    final records = <MdmClassRecord>[];
+
+    for (int i = days - 1; i >= 0; i--) {
+      final dateKey = DateFormat('yyyy-MM-dd')
+          .format(DateTime.now().subtract(Duration(days: i)));
+      final snap = await _db
+          .collection('schools')
+          .doc(schoolId)
+          .collection('mdm')
+          .doc(dateKey)
+          .collection('classes')
+          .get();
+      records.addAll(snap.docs.map(MdmClassRecord.fromFirestore));
+    }
+
+    return records;
+  }
+
+  Future<List<MdmClassRecord>> getMdmRecordsForRange(
+    String schoolId, {
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    if (!_isFirebaseInitialized) return [];
+    final records = <MdmClassRecord>[];
+    final dayCount = to.difference(from).inDays;
+
+    for (int i = 0; i <= dayCount; i++) {
+      final dateKey =
+          DateFormat('yyyy-MM-dd').format(from.add(Duration(days: i)));
+      final snap = await _db
+          .collection('schools')
+          .doc(schoolId)
+          .collection('mdm')
+          .doc(dateKey)
+          .collection('classes')
+          .get();
+      records.addAll(snap.docs.map(MdmClassRecord.fromFirestore));
+    }
+
+    return records;
   }
 
   // ─── Staff / Leave Requests ───────────────────────────────────
@@ -582,6 +721,73 @@ class FirestoreService {
     }
 
     await batch.commit();
+  }
+
+  Future<List<DistributionStudentModel>> getDistributionRoster(
+    String schoolId,
+    String year, {
+    String? classId,
+  }) async {
+    if (!_isFirebaseInitialized) return [];
+    Query studentQuery = _db
+        .collection('schools')
+        .doc(schoolId)
+        .collection('students')
+        .where('isActive', isEqualTo: true)
+        .orderBy('rollNo');
+    if (classId != null && classId.isNotEmpty) {
+      studentQuery = studentQuery.where('classId', isEqualTo: classId);
+    }
+
+    final studentsSnap = await studentQuery.get();
+    final distSnap = await _db
+        .collection('schools')
+        .doc(schoolId)
+        .collection('inventory')
+        .doc(year)
+        .collection('distributions')
+        .get();
+
+    final distByStudent = {
+      for (final doc in distSnap.docs)
+        doc.id: DistributionStudentModel.fromFirestore(doc),
+    };
+
+    return studentsSnap.docs.map((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      final existing = distByStudent[doc.id];
+      return DistributionStudentModel(
+        studentId: doc.id,
+        fullName: data['fullName'] ?? '',
+        rollNo: data['rollNo'] ?? 0,
+        srn: data['srn'] ?? '',
+        uniformReceived: existing?.uniformReceived ?? false,
+        shoesReceived: existing?.shoesReceived ?? false,
+        uniformSize: existing?.uniformSize ?? 'M',
+        shoesSize: existing?.shoesSize ?? '7',
+      );
+    }).toList();
+  }
+
+  Future<Map<String, int>> getInventorySummary(
+    String schoolId,
+    String year, {
+    String? classId,
+  }) async {
+    final roster = await getDistributionRoster(
+      schoolId,
+      year,
+      classId: classId,
+    );
+    final uniformReceived =
+        roster.where((student) => student.uniformReceived).length;
+    final shoesReceived =
+        roster.where((student) => student.shoesReceived).length;
+    return {
+      'uniformReceived': uniformReceived,
+      'shoesReceived': shoesReceived,
+      'totalStudents': roster.length,
+    };
   }
 
   // ─── Dashboard Stats ──────────────────────────────────────────

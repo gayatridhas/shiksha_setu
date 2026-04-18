@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import '../models/app_models.dart';
+import '../core/utils/academic_year_utils.dart';
 
 class AuthService {
   // Safe getters to prevent crash if Firebase is not initialized
@@ -108,7 +109,7 @@ class AuthService {
         'adminUid': uid,
         'totalStudents': 0,
         'totalStaff': 0,
-        'academicYear': '2024-25',
+        'academicYear': AcademicYearUtils.currentAcademicYear(),
         'createdAt': FieldValue.serverTimestamp(),
       });
 

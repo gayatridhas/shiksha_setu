@@ -1,0 +1,108 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function userExists() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function isAdmin() {
+      return userExists() && userDoc().data.role == 'admin';
+    }
+
+    function sameSchool(schoolId) {
+      return userExists() && userDoc().data.schoolId == schoolId;
+    }
+
+    match /users/{uid} {
+      allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin());
+
+      // Bootstrap first admin profile creation after Auth sign-up.
+      allow create: if isSignedIn() && (
+        (request.auth.uid == uid && request.resource.data.role == 'admin') ||
+        isAdmin()
+      );
+
+      allow update: if isSignedIn() && (request.auth.uid == uid || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    match /schools/{schoolId} {
+      allow read: if isAdmin() && sameSchool(schoolId);
+
+      // Bootstrap first school creation during admin sign-up.
+      allow create: if isSignedIn() && request.resource.data.adminUid == request.auth.uid;
+
+      allow update: if isAdmin() && sameSchool(schoolId);
+      allow delete: if false;
+
+      match /staff/{staffId} {
+        allow read: if isAdmin() && sameSchool(schoolId);
+        allow create, update: if isAdmin() && sameSchool(schoolId);
+        allow delete: if isAdmin() && sameSchool(schoolId);
+      }
+
+      match /students/{studentId} {
+        allow read: if isAdmin() && sameSchool(schoolId);
+        allow create, update: if isAdmin() && sameSchool(schoolId);
+        allow delete: if isAdmin() && sameSchool(schoolId);
+      }
+
+      match /attendance/{dateId} {
+        allow read: if isSignedIn() && sameSchool(schoolId);
+        allow create, update: if isSignedIn() && sameSchool(schoolId);
+        allow delete: if isAdmin() && sameSchool(schoolId);
+
+        match /entries/{entryId} {
+          allow read: if isSignedIn() && sameSchool(schoolId);
+          allow create, update: if isSignedIn() && sameSchool(schoolId);
+          allow delete: if isAdmin() && sameSchool(schoolId);
+        }
+
+        match /classes/{classId} {
+          allow read: if isSignedIn() && sameSchool(schoolId);
+          allow create, update: if isSignedIn() && sameSchool(schoolId);
+          allow delete: if isAdmin() && sameSchool(schoolId);
+        }
+      }
+
+      match /mdm/{dateId} {
+        allow read: if isSignedIn() && sameSchool(schoolId);
+        allow create, update: if isSignedIn() && sameSchool(schoolId);
+        allow delete: if isAdmin() && sameSchool(schoolId);
+
+        match /classes/{classId} {
+          allow read: if isSignedIn() && sameSchool(schoolId);
+          allow create, update: if isSignedIn() && sameSchool(schoolId);
+          allow delete: if isAdmin() && sameSchool(schoolId);
+        }
+      }
+
+      match /inventory/{yearId} {
+        allow read: if isSignedIn() && sameSchool(schoolId);
+        allow create, update: if isSignedIn() && sameSchool(schoolId);
+        allow delete: if isAdmin() && sameSchool(schoolId);
+
+        match /distributions/{studentId} {
+          allow read: if isSignedIn() && sameSchool(schoolId);
+          allow create, update: if isSignedIn() && sameSchool(schoolId);
+          allow delete: if isAdmin() && sameSchool(schoolId);
+        }
+      }
+
+      match /leave_requests/{requestId} {
+        allow read: if isSignedIn() && sameSchool(schoolId);
+        allow create: if isSignedIn() && sameSchool(schoolId);
+        allow update: if isSignedIn() && sameSchool(schoolId);
+        allow delete: if isAdmin() && sameSchool(schoolId);
+      }
+    }
+  }
+}

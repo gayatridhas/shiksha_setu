@@ -1,10 +1,11 @@
 import 'dart:math';
-import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import '../models/app_models.dart';
 import '../core/utils/academic_year_utils.dart';
+import '../firebase_options.dart';
 
 class AuthService {
   // Safe getters to prevent crash if Firebase is not initialized
@@ -151,6 +152,106 @@ class AuthService {
     return AuthResult.error(
       'Teacher self-sign-up is disabled. Please ask a school administrator to create your account.',
     );
+  }
+
+  Future<AuthResult> createTeacherAccount({
+    required String email,
+    required String password,
+    required String fullName,
+    required String phone,
+    required String schoolId,
+    required String schoolName,
+    required String classId,
+    String subject = '',
+  }) async {
+    if (!_isFirebaseInitialized) {
+      return AuthResult.error('Firebase not configured.');
+    }
+
+    FirebaseApp? secondaryApp;
+    UserCredential? credential;
+
+    try {
+      if (!kIsWeb) {
+        return AuthResult.error(
+          'Teacher creation is currently supported on web only.',
+        );
+      }
+
+      final appName =
+          'teacher-creator-${DateTime.now().microsecondsSinceEpoch}';
+      secondaryApp = await Firebase.initializeApp(
+        name: appName,
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      final secondaryAuth = FirebaseAuth.instanceFor(app: secondaryApp);
+
+      credential = await secondaryAuth.createUserWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      );
+
+      final teacherUser = credential.user;
+      if (teacherUser == null) {
+        return AuthResult.error('Teacher account could not be created.');
+      }
+
+      await teacherUser.updateDisplayName(fullName);
+
+      final batch = _db.batch();
+      final userRef = _db.collection('users').doc(teacherUser.uid);
+      final staffRef = _db
+          .collection('schools')
+          .doc(schoolId)
+          .collection('staff')
+          .doc(teacherUser.uid);
+      final schoolRef = _db.collection('schools').doc(schoolId);
+
+      batch.set(userRef, {
+        'fullName': fullName,
+        'email': email.trim(),
+        'phone': phone,
+        'role': 'teacher',
+        'schoolId': schoolId,
+        'schoolName': schoolName,
+        'classId': classId,
+        'emailVerified': false,
+        'isActive': true,
+        'createdAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      batch.set(staffRef, {
+        'fullName': fullName,
+        'email': email.trim(),
+        'phone': phone,
+        'subject': subject,
+        'grade': classId,
+        'todayStatus': 'present',
+        'classId': classId,
+        'isActive': true,
+        'createdAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      batch.set(schoolRef, {
+        'totalStaff': FieldValue.increment(1),
+      }, SetOptions(merge: true));
+
+      await batch.commit();
+      await teacherUser.sendEmailVerification();
+      await secondaryAuth.signOut();
+
+      return AuthResult.success(teacherUser);
+    } on FirebaseAuthException catch (e) {
+      return AuthResult.error(_authErrorMessage(e.code));
+    } catch (e) {
+      return AuthResult.error('Teacher creation failed: $e');
+    } finally {
+      try {
+        await secondaryApp?.delete();
+      } catch (e) {
+        debugPrint('WARNING: Failed to delete secondary Firebase app: $e');
+      }
+    }
   }
 
   Future<AuthResult> sendPasswordReset(String email) async {

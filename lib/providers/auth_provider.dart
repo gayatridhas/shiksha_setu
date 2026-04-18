@@ -60,7 +60,16 @@ class AuthNotifier extends StateNotifier<AsyncValue<void>> {
       state = const AsyncValue.data(null);
       return true;
     } else {
-      state = AsyncValue.error(result.errorMessage ?? 'Sign-up failed', StackTrace.current);
+      final message = result.errorMessage ?? 'Sign-up failed';
+      if (message.contains('permission-denied') ||
+          message.contains('Missing or insufficient permissions')) {
+        state = AsyncValue.error(
+          'Admin sign-up is blocked by Firestore rules. Publish the repo\'s firestore.rules file in Firebase Console, then try again.',
+          StackTrace.current,
+        );
+      } else {
+        state = AsyncValue.error(message, StackTrace.current);
+      }
       return false;
     }
   }
@@ -89,6 +98,39 @@ class AuthNotifier extends StateNotifier<AsyncValue<void>> {
       return true;
     } else {
       state = AsyncValue.error(result.errorMessage ?? 'Sign-up failed', StackTrace.current);
+      return false;
+    }
+  }
+
+  Future<bool> createTeacherAccount({
+    required String email,
+    required String password,
+    required String fullName,
+    required String phone,
+    required String schoolId,
+    required String schoolName,
+    required String classId,
+    String subject = '',
+  }) async {
+    state = const AsyncValue.loading();
+    final result = await _authService.createTeacherAccount(
+      email: email,
+      password: password,
+      fullName: fullName,
+      phone: phone,
+      schoolId: schoolId,
+      schoolName: schoolName,
+      classId: classId,
+      subject: subject,
+    );
+    if (result.isSuccess) {
+      state = const AsyncValue.data(null);
+      return true;
+    } else {
+      state = AsyncValue.error(
+        result.errorMessage ?? 'Teacher creation failed',
+        StackTrace.current,
+      );
       return false;
     }
   }

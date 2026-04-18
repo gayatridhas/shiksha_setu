@@ -7,11 +7,178 @@ import '../../widgets/initials_avatar.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/firestore_providers.dart';
 
-class AdminStaffScreen extends ConsumerWidget {
+class AdminStaffScreen extends ConsumerStatefulWidget {
   const AdminStaffScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AdminStaffScreen> createState() => _AdminStaffScreenState();
+}
+
+class _AdminStaffScreenState extends ConsumerState<AdminStaffScreen> {
+  Future<void> _openCreateTeacherSheet(AppUser profile) async {
+    final nameController = TextEditingController();
+    final emailController = TextEditingController();
+    final phoneController = TextEditingController();
+    final passwordController = TextEditingController();
+    final subjectController = TextEditingController();
+    final classController = TextEditingController();
+    var isSubmitting = false;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            Future<void> submitTeacher() async {
+              final fullName = nameController.text.trim();
+              final email = emailController.text.trim();
+              final phone = phoneController.text.trim();
+              final password = passwordController.text.trim();
+              final subject = subjectController.text.trim();
+              final classId = classController.text.trim();
+
+              if (fullName.isEmpty ||
+                  email.isEmpty ||
+                  phone.isEmpty ||
+                  password.isEmpty ||
+                  classId.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Enter name, email, phone, password, and assigned class.',
+                    ),
+                  ),
+                );
+                return;
+              }
+
+              setModalState(() => isSubmitting = true);
+              final created = await ref.read(authNotifierProvider.notifier).createTeacherAccount(
+                    email: email,
+                    password: password,
+                    fullName: fullName,
+                    phone: phone,
+                    schoolId: profile.schoolId,
+                    schoolName: profile.schoolName,
+                    classId: classId,
+                    subject: subject,
+                  );
+              if (!mounted) return;
+
+              if (created) {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(this.context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Teacher account created for $email. They can now sign in.',
+                    ),
+                  ),
+                );
+              } else {
+                final error = ref.read(authNotifierProvider).error;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(error?.toString() ?? 'Teacher creation failed.'),
+                  ),
+                );
+              }
+
+              if (context.mounted) {
+                setModalState(() => isSubmitting = false);
+              }
+            }
+
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Create Teacher Account',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _CreateTeacherField(
+                      controller: nameController,
+                      label: 'Full Name',
+                    ),
+                    const SizedBox(height: 12),
+                    _CreateTeacherField(
+                      controller: emailController,
+                      label: 'Email',
+                      keyboardType: TextInputType.emailAddress,
+                    ),
+                    const SizedBox(height: 12),
+                    _CreateTeacherField(
+                      controller: phoneController,
+                      label: 'Phone',
+                      keyboardType: TextInputType.phone,
+                    ),
+                    const SizedBox(height: 12),
+                    _CreateTeacherField(
+                      controller: passwordController,
+                      label: 'Temporary Password',
+                      obscureText: true,
+                    ),
+                    const SizedBox(height: 12),
+                    _CreateTeacherField(
+                      controller: classController,
+                      label: 'Assigned Class',
+                      hintText: 'Example: 4 or Class 4',
+                    ),
+                    const SizedBox(height: 12),
+                    _CreateTeacherField(
+                      controller: subjectController,
+                      label: 'Subject (optional)',
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton.icon(
+                      onPressed: isSubmitting ? null : submitTeacher,
+                      icon: isSubmitting
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Icon(Icons.person_add_alt_1_rounded),
+                      label: Text(
+                        isSubmitting ? 'Creating...' : 'Create Teacher Account',
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.navyPrimary,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(double.infinity, 50),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final staffAsync = ref.watch(staffProvider);
     final leaveRequestsAsync = ref.watch(leaveRequestsProvider);
     final stats = ref.watch(dashboardStatsProvider).value ?? const DashboardStats();
@@ -25,7 +192,9 @@ class AdminStaffScreen extends ConsumerWidget {
           loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
           error: (err, stack) => Scaffold(body: Center(child: Text('Error: $err'))),
           data: (leaveRequests) {
-            final pendingRequests = leaveRequests.where((r) => r.status == LeaveRequestStatus.pending).toList();
+            final pendingRequests = leaveRequests
+                .where((r) => r.status == LeaveRequestStatus.pending)
+                .toList();
             final staffPresent = stats.staffPresent;
             final staffTotal = stats.staffTotal;
 
@@ -46,11 +215,27 @@ class AdminStaffScreen extends ConsumerWidget {
                     ),
                     SliverPadding(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                      sliver: SliverToBoxAdapter(child: _DownloadButton()),
+                      sliver: SliverToBoxAdapter(
+                        child: _CreateTeacherButton(
+                          onPressed: profile == null
+                              ? null
+                              : () => _openCreateTeacherSheet(profile),
+                        ),
+                      ),
                     ),
                     SliverPadding(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                      sliver: SliverToBoxAdapter(child: _AttendanceBadge(rate: stats.staffTotal > 0 ? (stats.staffPresent / stats.staffTotal * 100) : 0)),
+                      sliver: const SliverToBoxAdapter(child: _DownloadButton()),
+                    ),
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      sliver: SliverToBoxAdapter(
+                        child: _AttendanceBadge(
+                          rate: stats.staffTotal > 0
+                              ? (stats.staffPresent / stats.staffTotal * 100)
+                              : 0,
+                        ),
+                      ),
                     ),
                     SliverPadding(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
@@ -67,27 +252,29 @@ class AdminStaffScreen extends ConsumerWidget {
                           onApprove: (id) async {
                             if (profile == null) return;
                             await ref.read(firestoreServiceProvider).updateLeaveStatus(
-                              profile.schoolId,
-                              id,
-                              LeaveRequestStatus.approved,
-                              profile.fullName,
-                            );
+                                  profile.schoolId,
+                                  id,
+                                  LeaveRequestStatus.approved,
+                                  profile.fullName,
+                                );
                           },
                           onReject: (id) async {
                             if (profile == null) return;
                             await ref.read(firestoreServiceProvider).updateLeaveStatus(
-                              profile.schoolId,
-                              id,
-                              LeaveRequestStatus.rejected,
-                              profile.fullName,
-                            );
+                                  profile.schoolId,
+                                  id,
+                                  LeaveRequestStatus.rejected,
+                                  profile.fullName,
+                                );
                           },
                         ),
                       ),
                     ),
                     SliverPadding(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                      sliver: SliverToBoxAdapter(child: _ConsistencyCard(rate: 98.2)), // Calculated logic could go here
+                      sliver: const SliverToBoxAdapter(
+                        child: _ConsistencyCard(rate: 98.2),
+                      ),
                     ),
                   ],
                 ),
@@ -96,6 +283,60 @@ class AdminStaffScreen extends ConsumerWidget {
           },
         );
       },
+    );
+  }
+}
+
+class _CreateTeacherField extends StatelessWidget {
+  final TextEditingController controller;
+  final String label;
+  final String? hintText;
+  final TextInputType? keyboardType;
+  final bool obscureText;
+
+  const _CreateTeacherField({
+    required this.controller,
+    required this.label,
+    this.hintText,
+    this.keyboardType,
+    this.obscureText = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      keyboardType: keyboardType,
+      obscureText: obscureText,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hintText,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
+  }
+}
+
+class _CreateTeacherButton extends StatelessWidget {
+  final VoidCallback? onPressed;
+
+  const _CreateTeacherButton({required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton.icon(
+      onPressed: onPressed,
+      icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
+      label: const Text('Create Teacher Login'),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.navyPrimary,
+        foregroundColor: Colors.white,
+        minimumSize: const Size(double.infinity, 50),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        textStyle: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
+      ),
     );
   }
 }
@@ -181,6 +422,8 @@ class _StaffOverviewCard extends StatelessWidget {
 }
 
 class _DownloadButton extends StatelessWidget {
+  const _DownloadButton();
+
   @override
   Widget build(BuildContext context) {
     return ElevatedButton.icon(
@@ -248,10 +491,11 @@ class _LiveActivitySection extends StatelessWidget {
         const SizedBox(height: 10),
         if (staff.isEmpty)
           Center(
-              child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Text('No staff registered yet.', style: GoogleFonts.inter(color: AppColors.textGray)),
-          ))
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Text('No staff registered yet.', style: GoogleFonts.inter(color: AppColors.textGray)),
+            ),
+          )
         else
           ...staff.map((s) => _StaffActivityRow(staff: s)),
       ],
@@ -265,19 +509,27 @@ class _StaffActivityRow extends StatelessWidget {
 
   Color get _badgeColor {
     switch (staff.status) {
-      case StaffStatus.present: return AppColors.presentGreen;
-      case StaffStatus.leave: return AppColors.warningOrange;
-      case StaffStatus.duty: return AppColors.navyPrimary;
-      case StaffStatus.absent: return AppColors.warningRed;
+      case StaffStatus.present:
+        return AppColors.presentGreen;
+      case StaffStatus.leave:
+        return AppColors.warningOrange;
+      case StaffStatus.duty:
+        return AppColors.navyPrimary;
+      case StaffStatus.absent:
+        return AppColors.warningRed;
     }
   }
 
   String get _badgeLabel {
     switch (staff.status) {
-      case StaffStatus.present: return 'P';
-      case StaffStatus.leave: return 'L';
-      case StaffStatus.duty: return 'D';
-      case StaffStatus.absent: return 'A';
+      case StaffStatus.present:
+        return 'P';
+      case StaffStatus.leave:
+        return 'L';
+      case StaffStatus.duty:
+        return 'D';
+      case StaffStatus.absent:
+        return 'A';
     }
   }
 

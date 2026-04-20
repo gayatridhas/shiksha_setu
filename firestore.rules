@@ -26,7 +26,8 @@ service cloud.firestore {
     }
 
     function assignedClassId() {
-      return userExists() ? userDoc().data.classId : null;
+      return userExists() ? 
+        (userDoc().data.get('assignedClassId', userDoc().data.get('classId', null))) : null;
     }
 
     match /users/{uid} {

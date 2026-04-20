@@ -7,6 +7,7 @@ import '../../widgets/initials_avatar.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/firestore_providers.dart';
 import '../../core/utils/academic_year_utils.dart';
+import '../../widgets/admin_header.dart';
 
 // --- Screen Providers ---
 final studentSearchProvider = StateProvider<String>((ref) => '');
@@ -160,7 +161,7 @@ class _AdminStudentsScreenState extends ConsumerState<AdminStudentsScreen> {
           body: SafeArea(
             child: CustomScrollView(
               slivers: [
-                SliverToBoxAdapter(child: _AdminAppBar()),
+                SliverToBoxAdapter(child: const AdminHeader()),
                 SliverToBoxAdapter(child: _LedgerBanner(attendanceRate: stats.attendanceRate)),
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
@@ -256,24 +257,6 @@ class _AdminStudentsScreenState extends ConsumerState<AdminStudentsScreen> {
   }
 }
 
-class _AdminAppBar extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: AppColors.cardWhite,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          const Icon(Icons.menu_rounded, color: AppColors.navyPrimary, size: 22),
-          const SizedBox(width: 12),
-          Text('ShikshaSetu', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.navyPrimary)),
-          const Spacer(),
-          const Icon(Icons.notifications_outlined, color: AppColors.navyPrimary, size: 22),
-        ],
-      ),
-    );
-  }
-}
 
 class _LedgerBanner extends StatelessWidget {
   final double attendanceRate;

@@ -214,7 +214,7 @@ class AuthService {
         'role': 'teacher',
         'schoolId': schoolId,
         'schoolName': schoolName,
-        'classId': classId,
+        'assignedClassId': classId,
         'emailVerified': false,
         'isActive': true,
         'createdAt': FieldValue.serverTimestamp(),
@@ -227,7 +227,7 @@ class AuthService {
         'subject': subject,
         'grade': classId,
         'todayStatus': 'present',
-        'classId': classId,
+        'assignedClassId': classId,
         'isActive': true,
         'createdAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));

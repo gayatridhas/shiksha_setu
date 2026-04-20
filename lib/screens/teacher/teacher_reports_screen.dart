@@ -47,7 +47,7 @@ class _TeacherReportsScreenState extends ConsumerState<TeacherReportsScreen> {
         return;
       }
 
-      final classId = profile.classId;
+      final classId = profile.assignedClassId;
       if (classId == null || classId.isEmpty) {
         setState(() {
           _isLoading = false;
@@ -331,12 +331,12 @@ class _TeacherReportsScreenState extends ConsumerState<TeacherReportsScreen> {
           }
 
           final reportData = _reportData;
-          if (reportData == null || reportData.profile.classId == null || reportData.profile.classId!.isEmpty) {
+          if (reportData == null || reportData.profile.assignedClassId == null || reportData.profile.assignedClassId!.isEmpty) {
             return _ReportsMessageState(
               icon: Icons.class_outlined,
-              title: 'No class assigned',
-              message: 'Your account does not have an assigned class yet.',
-              actionLabel: 'Reload',
+              title: 'No Class Assigned',
+              message: 'Your account doesn\'t have an assigned class yet.',
+              actionLabel: 'Check Again',
               onPressed: _loadReports,
             );
           }
@@ -447,7 +447,7 @@ class _TeacherReportsData {
     if (hasAttendanceToday) {
       items.add(
         _ActivityItem(
-          title: 'Attendance submitted for ${profile.classId}',
+          title: 'Attendance submitted for ${profile.assignedClassId}',
           subtitle: 'Today\'s attendance has been recorded for your class.',
           icon: Icons.how_to_reg_rounded,
           color: AppColors.presentGreen,
@@ -525,7 +525,7 @@ class _AttendanceChartCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '${reportData.profile.classId} Attendance',
+                '${reportData.profile.assignedClassId} Attendance',
                 style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14),
               ),
               const Icon(Icons.show_chart_rounded, color: AppColors.presentGreen),

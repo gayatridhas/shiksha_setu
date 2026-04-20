@@ -62,7 +62,7 @@ class _MdmEntryScreenState extends ConsumerState<MdmEntryScreen> {
         return;
       }
 
-      final classId = profile.classId;
+      final classId = profile.assignedClassId;
       if (classId == null || classId.isEmpty) {
         setState(() {
           _profile = profile;
@@ -146,7 +146,7 @@ class _MdmEntryScreenState extends ConsumerState<MdmEntryScreen> {
   Future<void> _submit() async {
     final profile = _profile;
     final school = _school;
-    final classId = profile?.classId;
+    final classId = profile?.assignedClassId;
     final menu = _selectedMenu;
     final mealCount = int.tryParse(_mealCountController.text.trim());
 
@@ -216,6 +216,7 @@ class _MdmEntryScreenState extends ConsumerState<MdmEntryScreen> {
             menu: menu,
             notes: _notesController.text.trim(),
             submittedBy: profile.fullName,
+            uid: profile.uid, // Ensuring uid is passed
           );
       if (!mounted) return;
 
@@ -295,12 +296,12 @@ class _MdmEntryScreenState extends ConsumerState<MdmEntryScreen> {
               );
             }
 
-            if (_profile?.classId == null || _profile!.classId!.isEmpty) {
+            if (_profile?.assignedClassId == null || _profile!.assignedClassId!.isEmpty) {
               return _MdmMessageState(
                 icon: Icons.class_outlined,
-                title: 'No class assigned',
-                message: 'Your account does not have an assigned class yet.',
-                actionLabel: 'Reload',
+                title: 'No Class Assigned',
+                message: 'Your account doesn\'t have an assigned class yet. Please contact your administrator.',
+                actionLabel: 'Check Again',
                 onPressed: _loadData,
               );
             }
@@ -330,7 +331,7 @@ class _MdmEntryScreenState extends ConsumerState<MdmEntryScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                   sliver: SliverToBoxAdapter(
                     child: _HeroCard(
-                      classId: profile.classId!,
+                      classId: profile.assignedClassId!,
                       presentCount: _presentCount,
                       classStrength: _classStrength,
                     ),

@@ -107,7 +107,7 @@ class _StudentAttendanceScreenState extends ConsumerState<StudentAttendanceScree
                   fullName: nameController.text.trim(),
                   rollNo: int.parse(rollController.text.trim()),
                   srn: srnController.text.trim(),
-                  classId: profile.classId ?? '',
+                  classId: profile.assignedClassId ?? '',
                   gender: gender,
                   dob: dobController.text.trim(),
                   academicYear: '',
@@ -127,7 +127,7 @@ class _StudentAttendanceScreenState extends ConsumerState<StudentAttendanceScree
                     ),
                   ),
                 );
-                ref.invalidate(pendingStudentsProvider(profile.classId));
+                ref.invalidate(pendingStudentsProvider(profile.assignedClassId));
               } catch (e) {
                 if (!mounted) return;
                 ScaffoldMessenger.of(this.context).showSnackBar(
@@ -244,9 +244,60 @@ class _StudentAttendanceScreenState extends ConsumerState<StudentAttendanceScree
     final profile = ref.watch(userProfileProvider).value;
     if (profile == null) return const Scaffold(body: Center(child: CircularProgressIndicator()));
 
-    final classId = profile.classId ?? 'Unknown';
+    if (profile.assignedClassId == null || profile.assignedClassId!.isEmpty) {
+      return Scaffold(
+        backgroundColor: AppColors.backgroundGray,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: AppColors.cardWhite,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(Icons.class_outlined, size: 64, color: AppColors.warningOrange),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'No Class Assigned',
+                  style: GoogleFonts.poppins(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'You haven\'t been assigned a class yet. Please contact your administrator to assign you to a class to begin marking attendance.',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: AppColors.textGray,
+                    height: 1.6,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    final classId = profile.assignedClassId!;
     final studentsAsync = ref.watch(classStudentsProvider(classId));
-    final pendingStudentsAsync = ref.watch(pendingStudentsProvider(profile.classId));
+    final pendingStudentsAsync = ref.watch(pendingStudentsProvider(classId));
 
     return studentsAsync.when(
       loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),

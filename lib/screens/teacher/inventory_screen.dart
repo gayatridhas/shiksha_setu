@@ -53,7 +53,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
         return;
       }
 
-      final classId = profile.classId;
+      final classId = profile.assignedClassId;
       if (classId == null || classId.isEmpty) {
         setState(() {
           _profile = profile;
@@ -130,7 +130,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
 
   Future<void> _saveAll() async {
     final profile = _profile;
-    final classId = profile?.classId;
+    final classId = profile?.assignedClassId;
     if (profile == null || classId == null || classId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Assigned class data is unavailable.')),
@@ -225,12 +225,12 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
             }
 
             final profile = _profile;
-            if (profile == null || profile.classId == null || profile.classId!.isEmpty) {
+            if (profile == null || profile.assignedClassId == null || profile.assignedClassId!.isEmpty) {
               return _InventoryMessageState(
                 icon: Icons.class_outlined,
-                title: 'No class assigned',
-                message: 'Your account does not have an assigned class yet.',
-                actionLabel: 'Reload',
+                title: 'No Class Assigned',
+                message: 'Your account doesn\'t have an assigned class yet.',
+                actionLabel: 'Check Again',
                 onPressed: _loadInventory,
               );
             }
@@ -270,7 +270,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                     sliver: SliverToBoxAdapter(
                       child: _ClassHeader(
-                        classId: profile.classId!,
+                        classId: profile.assignedClassId!,
                         studentCount: _students.length,
                       ),
                     ),
@@ -361,7 +361,6 @@ class _AppHeader extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          InitialsAvatar(name: profile.fullName, radius: 16),
         ],
       ),
     );

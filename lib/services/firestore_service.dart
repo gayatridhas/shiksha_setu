@@ -819,6 +819,7 @@ class FirestoreService {
       menu: menuItem,
       notes: notes,
       submittedBy: markedBy,
+      uid: markedBy,
       photoUrl: photoUrl,
     );
   }
@@ -1035,6 +1036,7 @@ class FirestoreService {
     required String menu,
     required String notes,
     required String submittedBy,
+    required String uid,
     String photoUrl = '',
   }) async {
     if (!_isFirebaseInitialized) return;
@@ -1075,12 +1077,54 @@ class FirestoreService {
         'notes': notes,
         'photoUrl': photoUrl,
         'submittedBy': submittedBy,
+        'uid': uid,
+        'date': _today,
         'submittedAt': FieldValue.serverTimestamp(),
         'discrepancy': mealCount > presentCount,
       },
       SetOptions(merge: true),
     );
     await batch.commit();
+
+    // Also mark teacher present
+    await markTeacherPresent(
+      schoolId: schoolId,
+      uid: uid,
+      name: submittedBy,
+      classId: classId,
+    );
+  }
+
+  Future<void> markTeacherPresent({
+    required String schoolId,
+    required String uid,
+    required String name,
+    required String classId,
+  }) async {
+    if (!_isFirebaseInitialized) return;
+    final dateKey = _today;
+    final docRef = _db.collection('teacherAttendance').doc('${uid}_$dateKey');
+
+    await docRef.set({
+      'uid': uid,
+      'name': name,
+      'schoolId': schoolId,
+      'assignedClassId': classId,
+      'date': dateKey,
+      'status': 'present',
+      'markedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    // Also update staff collection for dashboard stats
+    await _db
+        .collection('schools')
+        .doc(schoolId)
+        .collection('staff')
+        .doc(uid)
+        .set({
+      'todayStatus': 'present',
+      'lastAttendanceDate': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
   Future<List<MdmClassRecord>> getTodayMdmClassRecords(String schoolId) async {

@@ -23,7 +23,7 @@ class AppUser {
   final UserRole role;
   final String schoolId;
   final String schoolName;
-  final String? classId;     // teacher only
+  final String? assignedClassId;     // teacher only
   final String? photoUrl;
   final bool emailVerified;
   final DateTime createdAt;
@@ -36,7 +36,7 @@ class AppUser {
     required this.role,
     required this.schoolId,
     required this.schoolName,
-    this.classId,
+    this.assignedClassId,
     this.photoUrl,
     this.emailVerified = false,
     required this.createdAt,
@@ -52,7 +52,7 @@ class AppUser {
       role: UserRoleExt.fromString(d['role'] ?? 'teacher'),
       schoolId: d['schoolId'] ?? '',
       schoolName: d['schoolName'] ?? '',
-      classId: d['classId'],
+      assignedClassId: d['assignedClassId'],
       photoUrl: d['photoUrl'],
       emailVerified: d['emailVerified'] ?? false,
       createdAt: (d['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
@@ -66,13 +66,13 @@ class AppUser {
     'role': role.name,
     'schoolId': schoolId,
     'schoolName': schoolName,
-    if (classId != null) 'classId': classId,
+    if (assignedClassId != null) 'assignedClassId': assignedClassId,
     if (photoUrl != null) 'photoUrl': photoUrl,
     'emailVerified': emailVerified,
     'createdAt': Timestamp.fromDate(createdAt),
   };
 
-  AppUser copyWith({String? fullName, String? phone, String? photoUrl, String? classId}) =>
+  AppUser copyWith({String? fullName, String? phone, String? photoUrl, String? assignedClassId}) =>
       AppUser(
         uid: uid,
         fullName: fullName ?? this.fullName,
@@ -81,7 +81,7 @@ class AppUser {
         role: role,
         schoolId: schoolId,
         schoolName: schoolName,
-        classId: classId ?? this.classId,
+        assignedClassId: assignedClassId ?? this.assignedClassId,
         photoUrl: photoUrl ?? this.photoUrl,
         emailVerified: emailVerified,
         createdAt: createdAt,
@@ -448,6 +448,8 @@ class StaffModel {
   final String? photoUrl;
   final String phone;
   final String email;
+  final String assignedClassId;
+  final DateTime? lastAttendanceDate;
 
   const StaffModel({
     required this.teacherId,
@@ -458,6 +460,8 @@ class StaffModel {
     this.photoUrl,
     this.phone = '',
     this.email = '',
+    this.assignedClassId = '',
+    this.lastAttendanceDate,
   });
 
   factory StaffModel.fromFirestore(DocumentSnapshot doc) {
@@ -471,6 +475,8 @@ class StaffModel {
       photoUrl: d['photoUrl'],
       phone: d['phone'] ?? '',
       email: d['email'] ?? '',
+      assignedClassId: d['assignedClassId'] ?? d['classId'] ?? '',
+      lastAttendanceDate: (d['lastAttendanceDate'] as Timestamp?)?.toDate(),
     );
   }
 
@@ -485,6 +491,42 @@ class StaffModel {
 }
 
 enum StaffStatus { present, leave, duty, absent }
+
+class TeacherAttendanceRecord {
+  final String id;
+  final String teacherId;
+  final String teacherName;
+  final String schoolId;
+  final String classId;
+  final String date;
+  final String status;
+  final DateTime markedAt;
+
+  const TeacherAttendanceRecord({
+    required this.id,
+    required this.teacherId,
+    required this.teacherName,
+    required this.schoolId,
+    required this.classId,
+    required this.date,
+    required this.status,
+    required this.markedAt,
+  });
+
+  factory TeacherAttendanceRecord.fromFirestore(DocumentSnapshot doc) {
+    final d = doc.data() as Map<String, dynamic>;
+    return TeacherAttendanceRecord(
+      id: doc.id,
+      teacherId: d['teacherId'] ?? '',
+      teacherName: d['teacherName'] ?? '',
+      schoolId: d['schoolId'] ?? '',
+      classId: d['classId'] ?? '',
+      date: d['date'] ?? '',
+      status: d['status'] ?? 'present',
+      markedAt: (d['markedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+    );
+  }
+}
 
 // ─── Leave Request ────────────────────────────────────────────
 class LeaveRequestModel {

@@ -13,6 +13,7 @@ import '../screens/teacher/mdm_entry_screen.dart';
 import '../screens/teacher/inventory_screen.dart';
 import '../screens/teacher/teacher_reports_screen.dart';
 import '../screens/admin/admin_shell_screen.dart';
+import '../widgets/profile_menu.dart';
 import '../providers/auth_provider.dart';
 import '../models/app_models.dart';
 
@@ -171,16 +172,7 @@ class _TeacherShellState extends ConsumerState<TeacherShell> {
                 color: Colors.white,
                 elevation: 4,
                 borderRadius: BorderRadius.circular(999),
-                child: IconButton(
-                  tooltip: 'Logout',
-                  onPressed: () async {
-                    await ref.read(authNotifierProvider.notifier).signOut();
-                  },
-                  icon: const Icon(
-                    Icons.logout_rounded,
-                    color: Color(0xFF1B3A6B),
-                  ),
-                ),
+                child: const ProfileMenu(),
               ),
             ),
           ),

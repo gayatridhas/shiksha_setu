@@ -7,6 +7,7 @@ import '../../models/app_models.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/firestore_providers.dart';
 import '../../theme/app_colors.dart';
+import '../../widgets/admin_header.dart';
 
 class AdminMealsScreen extends ConsumerStatefulWidget {
   const AdminMealsScreen({super.key});
@@ -98,16 +99,11 @@ class _AdminMealsScreenState extends ConsumerState<AdminMealsScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundGray,
-      appBar: AppBar(
-        title: Text(
-          'Meals Management',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 18),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: false,
-      ),
-      body: profileAsync.when(
+      body: Column(
+        children: [
+          const AdminHeader(title: 'Meals Management'),
+          Expanded(
+            child: profileAsync.when(
         loading: () => const _AdminMealsLoadingState(),
         error: (_, __) => _AdminMealsMessageState(
           icon: Icons.error_outline_rounded,
@@ -186,6 +182,9 @@ class _AdminMealsScreenState extends ConsumerState<AdminMealsScreen> {
             ),
           );
         },
+      ),
+          ),
+        ],
       ),
     );
   }

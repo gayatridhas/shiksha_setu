@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shiksha_setu_2/l10n/generated/app_localizations.dart';
 import '../../theme/app_colors.dart';
-import '../../widgets/initials_avatar.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/firestore_providers.dart';
 import '../../providers/locale_provider.dart';
@@ -71,8 +70,6 @@ class _Header extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          InitialsAvatar(name: name, radius: 20),
-          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

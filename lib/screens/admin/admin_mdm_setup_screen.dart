@@ -7,6 +7,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/firestore_providers.dart';
 import '../../services/firestore_service.dart';
 import '../../theme/app_colors.dart';
+import '../../widgets/admin_header.dart';
 
 class AdminMdmSetupScreen extends ConsumerStatefulWidget {
   const AdminMdmSetupScreen({super.key});
@@ -143,116 +144,111 @@ class _AdminMdmSetupScreenState extends ConsumerState<AdminMdmSetupScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundGray,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: Text(
-          'Set Today\'s Meal',
-          style: GoogleFonts.poppins(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
-          ),
-        ),
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? _MessageState(message: _error!, onRetry: _loadData)
-              : RefreshIndicator(
-                  onRefresh: () => _loadData(showSnackBar: false),
-                  child: ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
-                      _HeaderCard(
-                        dateLabel: dateLabel,
-                        currentMeal: _dailyMeal?.menuItem,
-                        notes: _dailyMeal?.notes,
-                      ),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.borderGray),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+      body: Column(
+        children: [
+          const AdminHeader(title: 'Set Today\'s Meal'),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _error != null
+                    ? _MessageState(message: _error!, onRetry: _loadData)
+                    : RefreshIndicator(
+                        onRefresh: () => _loadData(showSnackBar: false),
+                        child: ListView(
+                          padding: const EdgeInsets.all(16),
                           children: [
-                            Text(
-                              'Today\'s date',
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                color: AppColors.textGray,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              dateLabel,
-                              style: GoogleFonts.poppins(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
-                              ),
+                            _HeaderCard(
+                              dateLabel: dateLabel,
+                              currentMeal: _dailyMeal?.menuItem,
+                              notes: _dailyMeal?.notes,
                             ),
                             const SizedBox(height: 16),
-                            DropdownButtonFormField<String>(
-                              value: _selectedMeal,
-                              decoration: const InputDecoration(
-                                labelText: 'Today\'s meal',
-                                prefixIcon: Icon(Icons.restaurant_menu_rounded),
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: AppColors.borderGray),
                               ),
-                              items: menuItems
-                                  .map(
-                                    (item) => DropdownMenuItem<String>(
-                                      value: item,
-                                      child: Text(item),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Today\'s date',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 12,
+                                      color: AppColors.textGray,
                                     ),
-                                  )
-                                  .toList(),
-                              onChanged: (value) {
-                                setState(() => _selectedMeal = value);
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            TextField(
-                              controller: _notesController,
-                              maxLines: 4,
-                              decoration: const InputDecoration(
-                                labelText: 'Notes',
-                                hintText: 'No meal today - holiday',
-                                alignLabelWithHint: true,
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: _isSaving ? null : _saveMeal,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.navyPrimary,
-                                  foregroundColor: Colors.white,
-                                  minimumSize: const Size(0, 52),
-                                ),
-                                child: _isSaving
-                                    ? const SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Colors.white,
-                                        ),
-                                      )
-                                    : const Text('Set Meal for Today'),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    dateLabel,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  DropdownButtonFormField<String>(
+                                    value: _selectedMeal,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Today\'s meal',
+                                      prefixIcon: Icon(Icons.restaurant_menu_rounded),
+                                    ),
+                                    items: menuItems
+                                        .map(
+                                          (item) => DropdownMenuItem<String>(
+                                            value: item,
+                                            child: Text(item),
+                                          ),
+                                        )
+                                        .toList(),
+                                    onChanged: (value) {
+                                      setState(() => _selectedMeal = value);
+                                    },
+                                  ),
+                                  const SizedBox(height: 16),
+                                  TextField(
+                                    controller: _notesController,
+                                    maxLines: 4,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Notes',
+                                      hintText: 'No meal today - holiday',
+                                      alignLabelWithHint: true,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton(
+                                      onPressed: _isSaving ? null : _saveMeal,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppColors.navyPrimary,
+                                        foregroundColor: Colors.white,
+                                        minimumSize: const Size(0, 52),
+                                      ),
+                                      child: _isSaving
+                                          ? const SizedBox(
+                                              width: 18,
+                                              height: 18,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: Colors.white,
+                                              ),
+                                            )
+                                          : const Text('Set Meal for Today'),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
+          ),
+        ],
+      ),
     );
   }
 }

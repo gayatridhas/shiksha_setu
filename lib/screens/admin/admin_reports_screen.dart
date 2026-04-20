@@ -13,6 +13,7 @@ import '../../theme/app_colors.dart';
 import '../../widgets/initials_avatar.dart';
 import 'admin_shell_screen.dart';
 import '../../providers/firestore_providers.dart';
+import '../../widgets/admin_header.dart';
 
 class AdminReportsScreen extends ConsumerStatefulWidget {
   const AdminReportsScreen({super.key});
@@ -292,7 +293,7 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
               child: CustomScrollView(
                 slivers: [
                   SliverToBoxAdapter(
-                    child: _AdminAppBar(profile: data.profile),
+                    child: const AdminHeader(),
                   ),
                   SliverPadding(
                     padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),

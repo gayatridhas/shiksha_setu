@@ -6,6 +6,7 @@ import '../../models/app_models.dart';
 import '../../widgets/initials_avatar.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/firestore_providers.dart';
+import '../../widgets/admin_header.dart';
 
 class AdminStaffScreen extends ConsumerStatefulWidget {
   const AdminStaffScreen({super.key});
@@ -204,7 +205,7 @@ class _AdminStaffScreenState extends ConsumerState<AdminStaffScreen> {
               body: SafeArea(
                 child: CustomScrollView(
                   slivers: [
-                    SliverToBoxAdapter(child: _AdminAppBar(profile: profile)),
+                    SliverToBoxAdapter(child: const AdminHeader()),
                     SliverPadding(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                       sliver: SliverToBoxAdapter(
@@ -342,30 +343,6 @@ class _CreateTeacherButton extends StatelessWidget {
   }
 }
 
-class _AdminAppBar extends StatelessWidget {
-  final AppUser? profile;
-  const _AdminAppBar({super.key, this.profile});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: AppColors.cardWhite,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          const Icon(Icons.menu_rounded, color: AppColors.navyPrimary, size: 22),
-          const SizedBox(width: 12),
-          Text(
-            'ShikshaSetu',
-            style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.navyPrimary),
-          ),
-          const Spacer(),
-          InitialsAvatar(name: profile?.fullName ?? 'Admin', radius: 14),
-        ],
-      ),
-    );
-  }
-}
 
 class _StaffOverviewCard extends StatelessWidget {
   final int presentCount;
@@ -554,7 +531,7 @@ class _StaffActivityRow extends StatelessWidget {
               children: [
                 Text(staff.name, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
                 Text(
-                  '${staff.subject} • ${staff.grade}',
+                  '${staff.subject} • ${staff.assignedClassId.isNotEmpty ? "Class ${staff.assignedClassId}" : "No Class"}',
                   style: GoogleFonts.inter(fontSize: 12, color: AppColors.textGray),
                 ),
               ],

@@ -7,7 +7,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/firestore_providers.dart';
 import '../../providers/locale_provider.dart';
 import '../../models/app_models.dart';
-import '../../widgets/initials_avatar.dart';
+import '../../widgets/admin_header.dart';
 import '../../core/utils/academic_year_utils.dart';
 import 'admin_mdm_setup_screen.dart';
 
@@ -31,41 +31,13 @@ class AdminHomeScreen extends ConsumerWidget {
         child: CustomScrollView(
           slivers: [
             SliverToBoxAdapter(
-              child: Container(
-                color: AppColors.cardWhite,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Row(
-                  children: [
-                    const Icon(Icons.menu_rounded, color: AppColors.navyPrimary),
-                    const SizedBox(width: 12),
-                    Text(
-                      'ShikshaSetu',
-                      style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.navyPrimary),
-                    ),
-                    const Spacer(),
-                    DropdownButton<String>(
-                      value: currentLocale.languageCode,
-                      underline: const SizedBox(),
-                      icon: const Icon(Icons.language_rounded, color: AppColors.navyPrimary, size: 24),
-                      items: const [
-                        DropdownMenuItem(value: 'en', child: Text('EN')),
-                        DropdownMenuItem(value: 'hi', child: Text('HI')),
-                        DropdownMenuItem(value: 'mr', child: Text('MR')),
-                      ],
-                      onChanged: (lang) {
-                        if (lang != null) {
-                          ref.read(localeProvider.notifier).setLocale(lang);
-                        }
-                      },
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.notifications_outlined, color: AppColors.navyPrimary),
-                      onPressed: () {},
-                    ),
-                    const SizedBox(width: 4),
-                    InitialsAvatar(name: name, radius: 16),
-                  ],
-                ),
+              child: AdminHeader(
+                extraActions: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications_outlined, color: AppColors.navyPrimary),
+                    onPressed: () {},
+                  ),
+                ],
               ),
             ),
             SliverPadding(

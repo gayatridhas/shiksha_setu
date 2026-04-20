@@ -19,7 +19,8 @@ final studentsProvider = StreamProvider<List<StudentModel>>((ref) {
   return ref.watch(firestoreServiceProvider).studentsStream(user.schoolId);
 });
 
-final allCurrentYearStudentsProvider = StreamProvider<List<StudentModel>>((ref) {
+final allCurrentYearStudentsProvider =
+    StreamProvider<List<StudentModel>>((ref) {
   final user = ref.watch(userProfileProvider).value;
   if (user == null) return Stream.value([]);
   return ref.watch(firestoreServiceProvider).studentsStreamWithOptions(
@@ -28,13 +29,17 @@ final allCurrentYearStudentsProvider = StreamProvider<List<StudentModel>>((ref) 
       );
 });
 
-final classStudentsProvider = StreamProvider.family<List<StudentModel>, String>((ref, classId) {
+final classStudentsProvider =
+    StreamProvider.family<List<StudentModel>, String>((ref, classId) {
   final user = ref.watch(userProfileProvider).value;
   if (user == null) return Stream.value([]);
-  return ref.watch(firestoreServiceProvider).studentsStream(user.schoolId, classId: classId);
+  return ref
+      .watch(firestoreServiceProvider)
+      .studentsStream(user.schoolId, classId: classId);
 });
 
-final pendingStudentsProvider = FutureProvider.family<List<StudentModel>, String?>((ref, classId) async {
+final pendingStudentsProvider =
+    FutureProvider.family<List<StudentModel>, String?>((ref, classId) async {
   final user = ref.watch(userProfileProvider).value;
   if (user == null) return [];
   return ref.watch(firestoreServiceProvider).getPendingStudents(
@@ -44,10 +49,24 @@ final pendingStudentsProvider = FutureProvider.family<List<StudentModel>, String
 });
 
 // ─── Attendance Providers ─────────────────────────────────────
-final attendanceProvider = StreamProvider.family<List<AttendanceEntry>, String>((ref, classId) {
+final attendanceProvider =
+    StreamProvider.family<List<AttendanceEntry>, String>((ref, classId) {
   final user = ref.watch(userProfileProvider).value;
   if (user == null) return Stream.value([]);
-  return ref.watch(firestoreServiceProvider).attendanceStream(user.schoolId, classId);
+  return ref
+      .watch(firestoreServiceProvider)
+      .attendanceStream(user.schoolId, classId);
+});
+
+final attendanceByDateProvider = StreamProvider.family<List<AttendanceEntry>,
+    ({String classId, DateTime date})>((ref, arg) {
+  final user = ref.watch(userProfileProvider).value;
+  if (user == null) return Stream.value([]);
+  return ref.watch(firestoreServiceProvider).attendanceStream(
+        user.schoolId,
+        arg.classId,
+        date: arg.date.toIso8601String().split('T').first,
+      );
 });
 
 // ─── Staff Providers ──────────────────────────────────────────
@@ -71,10 +90,14 @@ final mdmTodayProvider = StreamProvider((ref) {
 });
 
 // ─── Inventory Providers ──────────────────────────────────────
-final inventoryDistributionProvider = StreamProvider.family<List<DistributionStudentModel>, ({String year, String classId})>((ref, arg) {
+final inventoryDistributionProvider = StreamProvider.family<
+    List<DistributionStudentModel>,
+    ({String year, String classId})>((ref, arg) {
   final user = ref.watch(userProfileProvider).value;
   if (user == null) return Stream.value([]);
-  return ref.watch(firestoreServiceProvider).distributionStream(user.schoolId, arg.year, arg.classId);
+  return ref
+      .watch(firestoreServiceProvider)
+      .distributionStream(user.schoolId, arg.year, arg.classId);
 });
 
 // ─── Dashboard Stats Provider ─────────────────────────────────

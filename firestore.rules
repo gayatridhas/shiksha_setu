@@ -17,8 +17,16 @@ service cloud.firestore {
       return userExists() && userDoc().data.role == 'admin';
     }
 
+    function isTeacher() {
+      return userExists() && userDoc().data.role == 'teacher';
+    }
+
     function sameSchool(schoolId) {
       return userExists() && userDoc().data.schoolId == schoolId;
+    }
+
+    function assignedClassId() {
+      return userExists() ? userDoc().data.classId : null;
     }
 
     match /users/{uid} {
@@ -35,7 +43,7 @@ service cloud.firestore {
     }
 
     match /schools/{schoolId} {
-      allow read: if isAdmin() && sameSchool(schoolId);
+      allow read: if isSignedIn() && sameSchool(schoolId);
 
       // Bootstrap first school creation during admin sign-up.
       allow create: if isSignedIn() && request.resource.data.adminUid == request.auth.uid;
@@ -44,14 +52,27 @@ service cloud.firestore {
       allow delete: if false;
 
       match /staff/{staffId} {
-        allow read: if isAdmin() && sameSchool(schoolId);
+        allow read: if isSignedIn() && sameSchool(schoolId);
         allow create, update: if isAdmin() && sameSchool(schoolId);
         allow delete: if isAdmin() && sameSchool(schoolId);
       }
 
       match /students/{studentId} {
-        allow read: if isAdmin() && sameSchool(schoolId);
-        allow create, update: if isAdmin() && sameSchool(schoolId);
+        allow read: if isSignedIn() && sameSchool(schoolId);
+        allow create: if sameSchool(schoolId) && (
+          isAdmin() ||
+          (isTeacher() &&
+           request.resource.data.classId == assignedClassId() &&
+           request.resource.data.approvalStatus == 'pending')
+        );
+        allow update: if sameSchool(schoolId) && (
+          isAdmin() ||
+          (isTeacher() &&
+           resource.data.classId == assignedClassId() &&
+           resource.data.approvalStatus == 'pending' &&
+           request.resource.data.classId == resource.data.classId &&
+           request.resource.data.approvalStatus == resource.data.approvalStatus)
+        );
         allow delete: if isAdmin() && sameSchool(schoolId);
       }
 
@@ -103,6 +124,35 @@ service cloud.firestore {
         allow update: if isSignedIn() && sameSchool(schoolId);
         allow delete: if isAdmin() && sameSchool(schoolId);
       }
+    }
+
+    match /classes/{classId} {
+      allow read: if isSignedIn() && sameSchool(resource.data.schoolId);
+      allow create: if isAdmin() && sameSchool(request.resource.data.schoolId);
+      allow update: if isAdmin() && sameSchool(resource.data.schoolId);
+      allow delete: if isAdmin() && sameSchool(resource.data.schoolId);
+    }
+
+    match /dailyMeal/{docId} {
+      allow read: if isSignedIn() && sameSchool(resource.data.schoolId);
+      allow create, update: if isAdmin() && sameSchool(request.resource.data.schoolId);
+      allow delete: if isAdmin() && sameSchool(resource.data.schoolId);
+    }
+
+    match /attendance/{attendanceId} {
+      allow read: if isSignedIn() && sameSchool(resource.data.schoolId);
+      allow create, update: if isSignedIn() &&
+        sameSchool(request.resource.data.schoolId) &&
+        (isAdmin() || request.resource.data.classId == assignedClassId());
+      allow delete: if isAdmin() && sameSchool(resource.data.schoolId);
+    }
+
+    match /mealRecords/{recordId} {
+      allow read: if isSignedIn() && sameSchool(resource.data.schoolId);
+      allow create, update: if isSignedIn() &&
+        sameSchool(request.resource.data.schoolId) &&
+        (isAdmin() || request.resource.data.classId == assignedClassId());
+      allow delete: if isAdmin() && sameSchool(resource.data.schoolId);
     }
   }
 }

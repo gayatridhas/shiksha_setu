@@ -19,10 +19,28 @@ final studentsProvider = StreamProvider<List<StudentModel>>((ref) {
   return ref.watch(firestoreServiceProvider).studentsStream(user.schoolId);
 });
 
+final allCurrentYearStudentsProvider = StreamProvider<List<StudentModel>>((ref) {
+  final user = ref.watch(userProfileProvider).value;
+  if (user == null) return Stream.value([]);
+  return ref.watch(firestoreServiceProvider).studentsStreamWithOptions(
+        user.schoolId,
+        includePending: true,
+      );
+});
+
 final classStudentsProvider = StreamProvider.family<List<StudentModel>, String>((ref, classId) {
   final user = ref.watch(userProfileProvider).value;
   if (user == null) return Stream.value([]);
   return ref.watch(firestoreServiceProvider).studentsStream(user.schoolId, classId: classId);
+});
+
+final pendingStudentsProvider = FutureProvider.family<List<StudentModel>, String?>((ref, classId) async {
+  final user = ref.watch(userProfileProvider).value;
+  if (user == null) return [];
+  return ref.watch(firestoreServiceProvider).getPendingStudents(
+        user.schoolId,
+        classId: classId,
+      );
 });
 
 // ─── Attendance Providers ─────────────────────────────────────

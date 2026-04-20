@@ -73,10 +73,10 @@ class _SplashScreenState extends State<SplashScreen>
                       width: 88,
                       height: 88,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
+                        color: Colors.white.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.25),
+                          color: Colors.white.withValues(alpha: 0.25),
                           width: 1.5,
                         ),
                       ),
@@ -102,7 +102,7 @@ class _SplashScreenState extends State<SplashScreen>
                       style: GoogleFonts.inter(
                         fontSize: 14,
                         fontWeight: FontWeight.w400,
-                        color: Colors.white.withOpacity(0.65),
+                        color: Colors.white.withValues(alpha: 0.65),
                         letterSpacing: 0.3,
                       ),
                     ),
@@ -113,7 +113,7 @@ class _SplashScreenState extends State<SplashScreen>
                       child: CircularProgressIndicator(
                         strokeWidth: 2.5,
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          Colors.white.withOpacity(0.5),
+                          Colors.white.withValues(alpha: 0.5),
                         ),
                       ),
                     ),
@@ -129,7 +129,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future<void> _resolveNavigation(User? user) async {
     if (user == null) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       context.go('/login');
       return;
     }
@@ -139,11 +139,11 @@ class _SplashScreenState extends State<SplashScreen>
           .collection('users')
           .doc(user.uid)
           .get();
-      if (!context.mounted) return;
+      if (!mounted) return;
 
       if (!userDoc.exists) {
         await FirebaseAuth.instance.signOut();
-        if (!context.mounted) return;
+        if (!mounted) return;
         context.go('/login');
         return;
       }
@@ -154,7 +154,7 @@ class _SplashScreenState extends State<SplashScreen>
 
       if (!isActive) {
         await FirebaseAuth.instance.signOut();
-        if (!context.mounted) return;
+        if (!mounted) return;
         context.go('/login');
         return;
       }
@@ -170,10 +170,10 @@ class _SplashScreenState extends State<SplashScreen>
       }
 
       await FirebaseAuth.instance.signOut();
-      if (!context.mounted) return;
+      if (!mounted) return;
       context.go('/login');
     } catch (_) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       context.go('/login');
     }
   }

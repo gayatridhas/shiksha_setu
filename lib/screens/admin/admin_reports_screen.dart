@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:pdf/widgets.dart' show TableHelper;
 import 'package:printing/printing.dart';
 import '../../core/utils/academic_year_utils.dart';
 import '../../models/app_models.dart';
@@ -176,7 +177,7 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
               ),
             ),
             pw.SizedBox(height: 8),
-            pw.Table.fromTextArray(
+            TableHelper.fromTextArray(
               headers: const ['Class', 'Present', 'Absent', 'Leave', '%'],
               data: attendanceRows.map((summary) {
                 final total = summary.totalCount;
@@ -201,7 +202,7 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
               ),
             ),
             pw.SizedBox(height: 8),
-            pw.Table.fromTextArray(
+            TableHelper.fromTextArray(
               headers: const ['Class', 'Present', 'Meals', 'Menu', 'OK?'],
               data: mealRows.map((record) {
                 return [
@@ -415,18 +416,18 @@ class _AdminReportsData {
   double get attendanceRateThisMonth {
     final present = attendanceSummaries.fold<int>(
       0,
-      (sum, summary) => sum + summary.presentCount,
+      (presentTotal, summary) => presentTotal + summary.presentCount,
     );
     final total = attendanceSummaries.fold<int>(
       0,
-      (sum, summary) => sum + summary.totalCount,
+      (recordTotal, summary) => recordTotal + summary.totalCount,
     );
     if (total == 0) return 0;
     return present / total * 100;
   }
 
   int get totalMealsThisMonth =>
-      mealRecords.fold<int>(0, (sum, record) => sum + record.mealCount);
+      mealRecords.fold<int>(0, (mealTotal, record) => mealTotal + record.mealCount);
 
   double get distributionCompletion {
     final totalStudents = inventorySummary['totalStudents'] ?? 0;

@@ -68,9 +68,10 @@ class _AdminStaffScreenState extends ConsumerState<AdminStaffScreen> {
                     subject: subject,
                   );
               if (!mounted) return;
+              if (!sheetContext.mounted) return;
 
               if (created) {
-                Navigator.of(context).pop();
+                Navigator.of(sheetContext).pop();
                 ScaffoldMessenger.of(this.context).showSnackBar(
                   SnackBar(
                     content: Text(
@@ -80,7 +81,7 @@ class _AdminStaffScreenState extends ConsumerState<AdminStaffScreen> {
                 );
               } else {
                 final error = ref.read(authNotifierProvider).error;
-                ScaffoldMessenger.of(context).showSnackBar(
+                ScaffoldMessenger.of(sheetContext).showSnackBar(
                   SnackBar(
                     content: Text(error?.toString() ?? 'Teacher creation failed.'),
                   ),
@@ -343,7 +344,7 @@ class _CreateTeacherButton extends StatelessWidget {
 
 class _AdminAppBar extends StatelessWidget {
   final AppUser? profile;
-  const _AdminAppBar({this.profile});
+  const _AdminAppBar({super.key, this.profile});
 
   @override
   Widget build(BuildContext context) {
@@ -396,7 +397,7 @@ class _StaffOverviewCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   'Daily Attendance &\nActivity Tracking',
-                  style: GoogleFonts.inter(fontSize: 12, color: Colors.white.withOpacity(0.7), height: 1.4),
+                  style: GoogleFonts.inter(fontSize: 12, color: Colors.white.withValues(alpha: 0.7), height: 1.4),
                 ),
               ],
             ),
@@ -410,7 +411,7 @@ class _StaffOverviewCard extends StatelessWidget {
               ),
               Text(
                 'TEACHERS\nPRESENT',
-                style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white.withOpacity(0.7), height: 1.2),
+                style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white.withValues(alpha: 0.7), height: 1.2),
                 textAlign: TextAlign.right,
               ),
             ],
@@ -443,7 +444,7 @@ class _DownloadButton extends StatelessWidget {
 
 class _AttendanceBadge extends StatelessWidget {
   final double rate;
-  const _AttendanceBadge({required this.rate});
+  const _AttendanceBadge({super.key, required this.rate});
 
   @override
   Widget build(BuildContext context) {
@@ -774,7 +775,7 @@ class _ConsistencyCard extends StatelessWidget {
             children: [
               Text(
                 'STAFF CONSISTENCY',
-                style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white.withOpacity(0.6), letterSpacing: 1.0),
+                style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white.withValues(alpha: 0.6), letterSpacing: 1.0),
               ),
               const SizedBox(height: 6),
               Text(

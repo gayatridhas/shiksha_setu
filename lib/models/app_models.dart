@@ -148,6 +148,87 @@ class SchoolModel {
   };
 }
 
+class ClassModel {
+  final String classId;
+  final String className;
+  final String schoolId;
+  final String assignedTeacherUid;
+  final int totalStudents;
+  final String section;
+
+  const ClassModel({
+    required this.classId,
+    required this.className,
+    required this.schoolId,
+    this.assignedTeacherUid = '',
+    this.totalStudents = 0,
+    this.section = '',
+  });
+
+  factory ClassModel.fromFirestore(DocumentSnapshot doc) {
+    final d = doc.data() as Map<String, dynamic>;
+    return ClassModel(
+      classId: d['classId'] ?? doc.id,
+      className: d['className'] ?? doc.id,
+      schoolId: d['schoolId'] ?? '',
+      assignedTeacherUid: d['assignedTeacherUid'] ?? '',
+      totalStudents: d['totalStudents'] ?? 0,
+      section: d['section'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toFirestore() => {
+        'classId': classId,
+        'className': className,
+        'schoolId': schoolId,
+        'assignedTeacherUid': assignedTeacherUid,
+        'totalStudents': totalStudents,
+        'section': section,
+      };
+}
+
+class DailyMealModel {
+  final String id;
+  final String schoolId;
+  final String date;
+  final String menuItem;
+  final String notes;
+  final String setBy;
+  final DateTime setAt;
+
+  const DailyMealModel({
+    required this.id,
+    required this.schoolId,
+    required this.date,
+    required this.menuItem,
+    required this.notes,
+    required this.setBy,
+    required this.setAt,
+  });
+
+  factory DailyMealModel.fromFirestore(DocumentSnapshot doc) {
+    final d = doc.data() as Map<String, dynamic>;
+    return DailyMealModel(
+      id: doc.id,
+      schoolId: d['schoolId'] ?? '',
+      date: d['date'] ?? '',
+      menuItem: d['menuItem'] ?? '',
+      notes: d['notes'] ?? '',
+      setBy: d['setBy'] ?? '',
+      setAt: (d['setAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toFirestore() => {
+        'schoolId': schoolId,
+        'date': date,
+        'menuItem': menuItem,
+        'notes': notes,
+        'setBy': setBy,
+        'setAt': Timestamp.fromDate(setAt),
+      };
+}
+
 // ─── Student ──────────────────────────────────────────────────
 class StudentModel {
   final String studentId;
@@ -158,6 +239,11 @@ class StudentModel {
   final String gender;
   final String dob;
   final bool isActive;
+  final String academicYear;
+  final String approvalStatus;
+  final String submittedByUid;
+  final String approvedByUid;
+  final DateTime? approvedAt;
   AttendanceStatus? status;
   bool hasConsecutiveAbsences;
 
@@ -170,6 +256,11 @@ class StudentModel {
     this.gender = 'male',
     this.dob = '',
     this.isActive = true,
+    this.academicYear = '',
+    this.approvalStatus = 'approved',
+    this.submittedByUid = '',
+    this.approvedByUid = '',
+    this.approvedAt,
     this.status,
     this.hasConsecutiveAbsences = false,
   });
@@ -185,6 +276,12 @@ class StudentModel {
       gender: d['gender'] ?? 'male',
       dob: d['dob'] ?? '',
       isActive: d['isActive'] ?? true,
+      academicYear:
+          d['academicYear'] ?? AcademicYearUtils.currentAcademicYear(),
+      approvalStatus: d['approvalStatus'] ?? 'approved',
+      submittedByUid: d['submittedByUid'] ?? '',
+      approvedByUid: d['approvedByUid'] ?? '',
+      approvedAt: (d['approvedAt'] as Timestamp?)?.toDate(),
       hasConsecutiveAbsences: d['hasConsecutiveAbsences'] ?? false,
     );
   }
@@ -197,6 +294,13 @@ class StudentModel {
     'gender': gender,
     'dob': dob,
     'isActive': isActive,
+    'academicYear': academicYear.isEmpty
+        ? AcademicYearUtils.currentAcademicYear()
+        : academicYear,
+    'approvalStatus': approvalStatus,
+    'submittedByUid': submittedByUid,
+    'approvedByUid': approvedByUid,
+    if (approvedAt != null) 'approvedAt': Timestamp.fromDate(approvedAt!),
   };
 }
 
@@ -285,6 +389,53 @@ class AttendanceClassSummary {
       leaveCount: d['leaveCount'] ?? 0,
     );
   }
+}
+
+class AttendanceRecordModel {
+  final String id;
+  final String classId;
+  final String schoolId;
+  final String date;
+  final String markedBy;
+  final DateTime markedAt;
+  final bool isSubmitted;
+  final Map<String, String> records;
+  final List<Map<String, dynamic>> editHistory;
+
+  const AttendanceRecordModel({
+    required this.id,
+    required this.classId,
+    required this.schoolId,
+    required this.date,
+    required this.markedBy,
+    required this.markedAt,
+    required this.isSubmitted,
+    required this.records,
+    this.editHistory = const [],
+  });
+
+  factory AttendanceRecordModel.fromFirestore(DocumentSnapshot doc) {
+    final d = doc.data() as Map<String, dynamic>;
+    return AttendanceRecordModel(
+      id: doc.id,
+      classId: d['classId'] ?? '',
+      schoolId: d['schoolId'] ?? '',
+      date: d['date'] ?? '',
+      markedBy: d['markedBy'] ?? '',
+      markedAt: (d['markedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      isSubmitted: d['isSubmitted'] ?? false,
+      records: (d['records'] as Map<String, dynamic>? ?? const {})
+          .map((key, value) => MapEntry(key, value.toString())),
+      editHistory: ((d['editHistory'] as List<dynamic>?) ?? const [])
+          .map((entry) => Map<String, dynamic>.from(entry as Map))
+          .toList(),
+    );
+  }
+
+  int get presentCount => records.values.where((value) => value == 'P').length;
+  int get absentCount => records.values.where((value) => value == 'A').length;
+  int get leaveCount => records.values.where((value) => value == 'L').length;
+  int get totalCount => records.length;
 }
 
 // ─── Staff ────────────────────────────────────────────────────
@@ -501,6 +652,54 @@ class MdmClassRecord {
       submittedAt:
           (d['submittedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       discrepancy: d['discrepancy'] ?? false,
+      photoUrl: d['photoUrl'] ?? '',
+    );
+  }
+}
+
+class MealRecordModel {
+  final String id;
+  final String classId;
+  final String schoolId;
+  final String date;
+  final int mealCount;
+  final String menuItem;
+  final int presentCount;
+  final bool discrepancy;
+  final String markedBy;
+  final DateTime markedAt;
+  final String notes;
+  final String photoUrl;
+
+  const MealRecordModel({
+    required this.id,
+    required this.classId,
+    required this.schoolId,
+    required this.date,
+    required this.mealCount,
+    required this.menuItem,
+    required this.presentCount,
+    required this.discrepancy,
+    required this.markedBy,
+    required this.markedAt,
+    this.notes = '',
+    this.photoUrl = '',
+  });
+
+  factory MealRecordModel.fromFirestore(DocumentSnapshot doc) {
+    final d = doc.data() as Map<String, dynamic>;
+    return MealRecordModel(
+      id: doc.id,
+      classId: d['classId'] ?? '',
+      schoolId: d['schoolId'] ?? '',
+      date: d['date'] ?? '',
+      mealCount: (d['mealCount'] as num?)?.toInt() ?? 0,
+      menuItem: d['menuItem'] ?? '',
+      presentCount: (d['presentCount'] as num?)?.toInt() ?? 0,
+      discrepancy: d['discrepancy'] ?? false,
+      markedBy: d['markedBy'] ?? '',
+      markedAt: (d['markedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      notes: d['notes'] ?? '',
       photoUrl: d['photoUrl'] ?? '',
     );
   }

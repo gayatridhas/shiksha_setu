@@ -305,7 +305,7 @@ class _SummaryBanner extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white.withOpacity(0.65),
+                    color: Colors.white.withValues(alpha: 0.65),
                     letterSpacing: 1.0,
                   ),
                 ),
@@ -323,7 +323,7 @@ class _SummaryBanner extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.35),
+                    color: statusColor.withValues(alpha: 0.35),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -341,9 +341,9 @@ class _SummaryBanner extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.12),
+              color: Colors.white.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withOpacity(0.2)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
             ),
             child: Icon(
               rate >= 85 ? Icons.trending_up_rounded : Icons.trending_down_rounded,
@@ -455,7 +455,7 @@ class _StatCard extends StatelessWidget {
                 label,
                 style: GoogleFonts.inter(
                   fontSize: 12,
-                  color: iconColor.withOpacity(0.75),
+                  color: iconColor.withValues(alpha: 0.75),
                 ),
               ),
             ],

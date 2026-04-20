@@ -9,7 +9,7 @@ import '../../providers/locale_provider.dart';
 import '../../models/app_models.dart';
 import '../../widgets/initials_avatar.dart';
 import '../../core/utils/academic_year_utils.dart';
-import '../../core/utils/academic_year_utils.dart';
+import 'admin_mdm_setup_screen.dart';
 
 class AdminHomeScreen extends ConsumerWidget {
   const AdminHomeScreen({super.key});
@@ -18,11 +18,12 @@ class AdminHomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(userProfileProvider).value;
     final stats = ref.watch(dashboardStatsProvider).value ?? const DashboardStats();
+    final school = ref.watch(schoolProvider).value;
     final l10n = AppLocalizations.of(context)!;
     final currentLocale = ref.watch(localeProvider);
 
     final name = profile?.fullName ?? 'Admin';
-    final school = profile?.schoolName ?? 'Loading...';
+    final schoolName = profile?.schoolName ?? 'Loading...';
 
     return Scaffold(
       backgroundColor: AppColors.backgroundGray,
@@ -79,10 +80,35 @@ class AdminHomeScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '$school - Academic Year ${AcademicYearUtils.currentAcademicYear()}',
+                      '$schoolName - Academic Year ${AcademicYearUtils.currentAcademicYear()}',
                       style: GoogleFonts.inter(fontSize: 13, color: AppColors.textGray),
                     ),
                     const SizedBox(height: 24),
+                    if (profile != null)
+                      FutureBuilder<DailyMealModel?>(
+                        future: ref
+                            .read(firestoreServiceProvider)
+                            .getDailyMeal(profile.schoolId),
+                        builder: (context, snapshot) {
+                          final mealName = snapshot.data?.menuItem;
+                          final notes = snapshot.data?.notes;
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _MealSetupCard(
+                              mealName: mealName,
+                              notes: notes,
+                              isConfigured: mealName != null && mealName.isNotEmpty,
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (_) => const AdminMdmSetupScreen(),
+                                  ),
+                                );
+                              },
+                            ),
+                          );
+                        },
+                      ),
                     
                     _AdminQuickStat(
                       label: 'Total ${l10n.students}', 
@@ -151,7 +177,7 @@ class _AdminQuickStat extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: color, size: 22),
@@ -168,6 +194,104 @@ class _AdminQuickStat extends StatelessWidget {
             style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.w700, color: color),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _MealSetupCard extends StatelessWidget {
+  final String? mealName;
+  final String? notes;
+  final bool isConfigured;
+  final VoidCallback onTap;
+
+  const _MealSetupCard({
+    required this.mealName,
+    required this.notes,
+    required this.isConfigured,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final badgeColor = isConfigured ? AppColors.presentGreen : AppColors.warningRed;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Ink(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.cardWhite,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.borderGray),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.accentBlue.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.restaurant_menu_rounded,
+                  color: AppColors.accentBlue,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Today\'s Meal',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      mealName ?? 'Meal Not Set',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.navyPrimary,
+                      ),
+                    ),
+                    if ((notes ?? '').isNotEmpty)
+                      Text(
+                        notes!,
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          color: AppColors.textGray,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: badgeColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  isConfigured ? 'READY' : 'SET NOW',
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: badgeColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

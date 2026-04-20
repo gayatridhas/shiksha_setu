@@ -180,7 +180,8 @@ class _TeacherReportsScreenState extends ConsumerState<TeacherReportsScreen> {
                       request,
                     );
                 if (!mounted) return;
-                Navigator.of(context).pop();
+                if (!sheetContext.mounted) return;
+                Navigator.of(sheetContext).pop();
                 ScaffoldMessenger.of(this.context).showSnackBar(
                   const SnackBar(
                     content: Text('Leave request submitted successfully.'),
@@ -190,7 +191,7 @@ class _TeacherReportsScreenState extends ConsumerState<TeacherReportsScreen> {
                 if (!mounted) return;
               } catch (_) {
                 if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
+                ScaffoldMessenger.of(sheetContext).showSnackBar(
                   const SnackBar(
                     content: Text('Unable to submit leave request right now.'),
                   ),
@@ -427,7 +428,7 @@ class _TeacherReportsData {
 
   double get runningAverage {
     if (attendanceCounts.isEmpty || classStrength == 0) return 0;
-    final totalPresent = attendanceCounts.values.fold<int>(0, (sum, value) => sum + value);
+    final totalPresent = attendanceCounts.values.fold<int>(0, (presentTotal, value) => presentTotal + value);
     final totalPossible = classStrength * attendanceCounts.length;
     if (totalPossible == 0) return 0;
     return (totalPresent / totalPossible) * 100;

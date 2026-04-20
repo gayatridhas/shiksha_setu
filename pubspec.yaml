@@ -32,6 +32,9 @@ dependencies:
   http: ^1.1.0
   pdf: ^3.11.0
   printing: ^5.13.4
+  share_plus: ^10.0.2
+  excel: ^4.0.6
+  cross_file: ^0.3.4+2
 
 dev_dependencies:
   flutter_test:

@@ -138,15 +138,15 @@ class RouterNotifier extends ChangeNotifier {
   }
 }
 
-class TeacherShell extends StatefulWidget {
+class TeacherShell extends ConsumerStatefulWidget {
   final Widget child;
   const TeacherShell({super.key, required this.child});
 
   @override
-  State<TeacherShell> createState() => _TeacherShellState();
+  ConsumerState<TeacherShell> createState() => _TeacherShellState();
 }
 
-class _TeacherShellState extends State<TeacherShell> {
+class _TeacherShellState extends ConsumerState<TeacherShell> {
   int _currentIndex = 0;
 
   final List<String> _routes = [
@@ -160,7 +160,32 @@ class _TeacherShellState extends State<TeacherShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: widget.child,
+      body: Stack(
+        children: [
+          widget.child,
+          Positioned(
+            top: 12,
+            right: 16,
+            child: SafeArea(
+              child: Material(
+                color: Colors.white,
+                elevation: 4,
+                borderRadius: BorderRadius.circular(999),
+                child: IconButton(
+                  tooltip: 'Logout',
+                  onPressed: () async {
+                    await ref.read(authNotifierProvider.notifier).signOut();
+                  },
+                  icon: const Icon(
+                    Icons.logout_rounded,
+                    color: Color(0xFF1B3A6B),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
       bottomNavigationBar: _TeacherBottomNav(
         currentIndex: _currentIndex,
         onTap: (index) {
@@ -187,7 +212,7 @@ class _TeacherBottomNav extends StatelessWidget {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 16,
             offset: const Offset(0, -4),
           ),

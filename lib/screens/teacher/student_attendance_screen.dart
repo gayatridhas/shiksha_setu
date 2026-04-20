@@ -28,6 +28,14 @@ class LocalAttendanceNotifier extends StateNotifier<List<StudentModel>> {
             rollNo: s.rollNo,
             srn: s.srn,
             classId: s.classId,
+            gender: s.gender,
+            dob: s.dob,
+            isActive: s.isActive,
+            academicYear: s.academicYear,
+            approvalStatus: s.approvalStatus,
+            submittedByUid: s.submittedByUid,
+            approvedByUid: s.approvedByUid,
+            approvedAt: s.approvedAt,
             status: status,
             hasConsecutiveAbsences: s.hasConsecutiveAbsences,
           )
@@ -45,6 +53,14 @@ class LocalAttendanceNotifier extends StateNotifier<List<StudentModel>> {
           rollNo: s.rollNo,
           srn: s.srn,
           classId: s.classId,
+          gender: s.gender,
+          dob: s.dob,
+          isActive: s.isActive,
+          academicYear: s.academicYear,
+          approvalStatus: s.approvalStatus,
+          submittedByUid: s.submittedByUid,
+          approvedByUid: s.approvedByUid,
+          approvedAt: s.approvedAt,
           status: AttendanceStatus.present,
           hasConsecutiveAbsences: s.hasConsecutiveAbsences,
         ),
@@ -60,10 +76,167 @@ class StudentAttendanceScreen extends ConsumerStatefulWidget {
 }
 
 class _StudentAttendanceScreenState extends ConsumerState<StudentAttendanceScreen> {
-  bool _isInitialized = false;
-
   bool _isAttendanceComplete(List<StudentModel> students) {
     return students.every((student) => student.status != null);
+  }
+
+  Future<void> _openAddStudentSheet(AppUser profile) async {
+    final formKey = GlobalKey<FormState>();
+    final nameController = TextEditingController();
+    final rollController = TextEditingController();
+    final srnController = TextEditingController();
+    final dobController = TextEditingController();
+    String gender = 'male';
+    bool isSubmitting = false;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            Future<void> submitStudent() async {
+              if (!formKey.currentState!.validate()) return;
+              setModalState(() => isSubmitting = true);
+              try {
+                final student = StudentModel(
+                  studentId: DateTime.now().microsecondsSinceEpoch.toString(),
+                  fullName: nameController.text.trim(),
+                  rollNo: int.parse(rollController.text.trim()),
+                  srn: srnController.text.trim(),
+                  classId: profile.classId ?? '',
+                  gender: gender,
+                  dob: dobController.text.trim(),
+                  academicYear: '',
+                  approvalStatus: 'pending',
+                  submittedByUid: profile.uid,
+                );
+                await ref
+                    .read(firestoreServiceProvider)
+                    .submitStudentForApproval(profile.schoolId, student);
+                if (!mounted) return;
+                if (!sheetContext.mounted) return;
+                Navigator.of(sheetContext).pop();
+                ScaffoldMessenger.of(this.context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Student submitted for admin approval.',
+                    ),
+                  ),
+                );
+                ref.invalidate(pendingStudentsProvider(profile.classId));
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(this.context).showSnackBar(
+                  SnackBar(content: Text('Unable to add student: $e')),
+                );
+              } finally {
+                if (context.mounted) {
+                  setModalState(() => isSubmitting = false);
+                }
+              }
+            }
+
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+              ),
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Add Student For Approval',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: nameController,
+                      decoration: const InputDecoration(labelText: 'Full Name'),
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
+                              ? 'Enter student name'
+                              : null,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: rollController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Roll No'),
+                      validator: (value) =>
+                          int.tryParse(value ?? '') == null
+                              ? 'Enter a valid roll number'
+                              : null,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: srnController,
+                      decoration: const InputDecoration(labelText: 'SRN'),
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
+                              ? 'Enter student SRN'
+                              : null,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: dobController,
+                      decoration: const InputDecoration(
+                        labelText: 'Date of Birth',
+                        hintText: 'YYYY-MM-DD',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: gender,
+                      decoration: const InputDecoration(labelText: 'Gender'),
+                      items: const [
+                        DropdownMenuItem(value: 'male', child: Text('Male')),
+                        DropdownMenuItem(value: 'female', child: Text('Female')),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) {
+                          setModalState(() => gender = value);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: isSubmitting ? null : submitStudent,
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 48),
+                        backgroundColor: AppColors.navyPrimary,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: isSubmitting
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text('Send To Admin For Approval'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -73,10 +246,44 @@ class _StudentAttendanceScreenState extends ConsumerState<StudentAttendanceScree
 
     final classId = profile.classId ?? 'Unknown';
     final studentsAsync = ref.watch(classStudentsProvider(classId));
+    final pendingStudentsAsync = ref.watch(pendingStudentsProvider(profile.classId));
 
     return studentsAsync.when(
       loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (err, stack) => Scaffold(body: Center(child: Text('Error: $err'))),
+      error: (err, stack) => Scaffold(
+        backgroundColor: AppColors.backgroundGray,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.cloud_off_rounded, size: 48, color: AppColors.textGray),
+                const SizedBox(height: 12),
+                Text(
+                  'Attendance data is unavailable',
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '$err',
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: AppColors.textGray,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
       data: (students) {
         // We use a separate provider for the local interactive state
         // We initialize it once when students load
@@ -103,11 +310,27 @@ class _StudentAttendanceScreenState extends ConsumerState<StudentAttendanceScree
                 bottom: false,
                 child: _TopBar(
                   classId: classId,
+                  pendingCount: pendingStudentsAsync.valueOrNull?.length ?? 0,
+                  onAddStudent: () => _openAddStudentSheet(profile),
                   onMarkAllPresent: () {
                     ref.read(localAttendanceProvider(students).notifier).markAllPresent();
                   },
                 ),
               ),
+              if ((pendingStudentsAsync.valueOrNull?.isNotEmpty ?? false))
+                Container(
+                  width: double.infinity,
+                  color: AppColors.warningOrange.withValues(alpha: 0.14),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  child: Text(
+                    '${pendingStudentsAsync.valueOrNull!.length} student entries are waiting for admin approval. Approved students only appear in attendance.',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
               // Banner
               AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
@@ -123,7 +346,7 @@ class _StudentAttendanceScreenState extends ConsumerState<StudentAttendanceScree
                           style: GoogleFonts.inter(
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
-                            color: Colors.white.withOpacity(0.7),
+                            color: Colors.white.withValues(alpha: 0.7),
                             letterSpacing: 1.0,
                           ),
                         ),
@@ -141,32 +364,47 @@ class _StudentAttendanceScreenState extends ConsumerState<StudentAttendanceScree
                           '$present of $total Students Present',
                           style: GoogleFonts.inter(
                             fontSize: 13,
-                            color: Colors.white.withOpacity(0.8),
+                            color: Colors.white.withValues(alpha: 0.8),
                           ),
                         ),
                       ],
                     ),
                     const Spacer(),
-                    Icon(Icons.people_rounded, size: 64, color: Colors.white.withOpacity(0.2)),
+                    Icon(Icons.people_rounded, size: 64, color: Colors.white.withValues(alpha: 0.2)),
                   ],
                 ),
               ),
               // List
               Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-                  itemCount: localStudents.length,
-                  itemBuilder: (context, index) {
-                    final student = localStudents[index];
-                    return _StudentRow(
-                      student: student,
-                      onStatusChanged: (status) {
-                        HapticFeedback.lightImpact();
-                        ref.read(localAttendanceProvider(students).notifier).updateStatus(student.studentId, status);
-                      },
-                    );
-                  },
-                ),
+                child: localStudents.isEmpty
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: Text(
+                            'No approved students are available for this class yet. Add students and wait for admin approval to begin attendance.',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: AppColors.textGray,
+                              height: 1.5,
+                            ),
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+                        itemCount: localStudents.length,
+                        itemBuilder: (context, index) {
+                          final student = localStudents[index];
+                          return _StudentRow(
+                            student: student,
+                            onStatusChanged: (status) {
+                              HapticFeedback.lightImpact();
+                              ref.read(localAttendanceProvider(students).notifier).updateStatus(student.studentId, status);
+                            },
+                          );
+                        },
+                      ),
               ),
             ],
           ),
@@ -232,8 +470,16 @@ class _StudentAttendanceScreenState extends ConsumerState<StudentAttendanceScree
 
 class _TopBar extends StatelessWidget {
   final String classId;
+  final int pendingCount;
+  final VoidCallback onAddStudent;
   final VoidCallback onMarkAllPresent;
-  const _TopBar({required this.classId, required this.onMarkAllPresent});
+  const _TopBar({
+    super.key,
+    required this.classId,
+    required this.pendingCount,
+    required this.onAddStudent,
+    required this.onMarkAllPresent,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -257,6 +503,35 @@ class _TopBar extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimary,
                     ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: onAddStudent,
+                  icon: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      const Icon(Icons.person_add_alt_1_rounded, color: AppColors.navyPrimary),
+                      if (pendingCount > 0)
+                        Positioned(
+                          right: -6,
+                          top: -6,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.warningRed,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '$pendingCount',
+                              style: GoogleFonts.inter(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
                 Container(
@@ -370,7 +645,7 @@ class _StudentRow extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -498,7 +773,7 @@ class _BottomBar extends StatelessWidget {
         color: AppColors.cardWhite,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 16,
             offset: const Offset(0, -4),
           ),
@@ -540,7 +815,7 @@ class _BottomStat extends StatelessWidget {
   final String label;
   final String value;
   final Color color;
-  const _BottomStat({required this.label, required this.value, required this.color});
+  const _BottomStat({super.key, required this.label, required this.value, required this.color});
 
   @override
   Widget build(BuildContext context) {

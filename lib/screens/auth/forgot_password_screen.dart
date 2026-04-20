@@ -113,7 +113,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(color: AppColors.presentGreen.withOpacity(0.1), shape: BoxShape.circle),
+            decoration: BoxDecoration(color: AppColors.presentGreen.withValues(alpha: 0.1), shape: BoxShape.circle),
             child: const Icon(Icons.mark_email_read_rounded, size: 64, color: AppColors.presentGreen),
           ),
           const SizedBox(height: 32),

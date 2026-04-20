@@ -86,9 +86,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     margin: const EdgeInsets.only(top: 12),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.warningRed.withOpacity(0.08),
+                      color: AppColors.warningRed.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.warningRed.withOpacity(0.25)),
+                      border: Border.all(color: AppColors.warningRed.withValues(alpha: 0.25)),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -116,7 +116,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: AppColors.navyPrimary.withOpacity(0.1),
+                      color: AppColors.navyPrimary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Icon(Icons.security_rounded, size: 40, color: AppColors.navyPrimary),
@@ -229,7 +229,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     padding: const EdgeInsets.all(12),
                     margin: const EdgeInsets.only(bottom: 24),
                     decoration: BoxDecoration(
-                      color: AppColors.warningRed.withOpacity(0.1),
+                      color: AppColors.warningRed.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(

@@ -172,11 +172,8 @@ class AuthService {
     UserCredential? credential;
 
     try {
-      if (!kIsWeb) {
-        return AuthResult.error(
-          'Teacher creation is currently supported on web only.',
-        );
-      }
+      // Teacher creation uses a secondary Firebase app to avoid logging out the admin.
+      // This is now supported on both web and mobile thanks to the Android/Web configurations.
 
       final appName =
           'teacher-creator-${DateTime.now().microsecondsSinceEpoch}';

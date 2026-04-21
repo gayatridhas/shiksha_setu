@@ -648,6 +648,31 @@ class MdmDayEntry {
   };
 }
 
+class MdmSummary {
+  final String date;
+  final String menu;
+  final int totalMeals;
+  final bool isVerified;
+
+  const MdmSummary({
+    required this.date,
+    this.menu = '',
+    this.totalMeals = 0,
+    this.isVerified = false,
+  });
+
+  factory MdmSummary.fromFirestore(DocumentSnapshot doc) {
+    if (!doc.exists) return const MdmSummary(date: '');
+    final d = doc.data() as Map<String, dynamic>;
+    return MdmSummary(
+      date: d['date'] ?? '',
+      menu: d['menu'] ?? '',
+      totalMeals: d['totalMeals'] ?? 0,
+      isVerified: d['isVerified'] ?? false,
+    );
+  }
+}
+
 // ─── Legacy helper classes (kept for UI compatibility) ────────
 class MdmClassEntry {
   final String classId;

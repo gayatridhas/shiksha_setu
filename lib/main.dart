@@ -35,16 +35,19 @@ class FirebaseInitState {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   try {
     debugPrint('DEBUG: Starting Firebase initialization...');
-    final options = DefaultFirebaseOptions.currentPlatform;
     debugPrint('DEBUG: Platform: ${kIsWeb ? "Web" : "Native"}');
-    debugPrint('DEBUG: Project: ${options.projectId}');
-    
-    await Firebase.initializeApp(
-      options: options,
-    );
+
+    if (kIsWeb) {
+      final options = DefaultFirebaseOptions.currentPlatform;
+      debugPrint('DEBUG: Project: ${options.projectId}');
+      await Firebase.initializeApp(options: options);
+    } else {
+      await Firebase.initializeApp();
+    }
+
     debugPrint('DEBUG: Firebase initializeApp completed successfully.');
     FirebaseInitState.setReady();
   } catch (e, stack) {
@@ -54,10 +57,10 @@ void main() async {
     FirebaseInitState.setError(
       kIsWeb
           ? 'Firebase web initialization failed. Check your web Firebase project settings.'
-          : 'This app is currently configured for web only. Add Android/iOS Firebase setup later.',
+          : 'Firebase initialization failed on this device.',
     );
   }
-  
+
   runApp(const ProviderScope(child: ShikshaSetu()));
 }
 

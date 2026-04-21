@@ -216,7 +216,7 @@ class _SecondaryChips extends StatelessWidget {
         _SecondaryChip(
           icon: Icons.people_rounded,
           label: l10n.students,
-          onTap: () {},
+          onTap: () => context.go('/teacher/attendance'),
         ),
       ],
     );
@@ -463,12 +463,14 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-class _PendingTasks extends StatelessWidget {
+class _PendingTasks extends ConsumerWidget {
   final AppLocalizations l10n;
   const _PendingTasks({required this.l10n});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hasAttendance = ref.watch(hasAttendanceForTodayProvider).value ?? false;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -476,38 +478,39 @@ class _PendingTasks extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Pending Tasks',
+              'Tasks & Alerts',
               style: GoogleFonts.poppins(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
               ),
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.warningRed,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                'ACTION REQUIRED',
-                style: GoogleFonts.inter(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                  letterSpacing: 0.3,
+            if (!hasAttendance)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.warningRed,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'ACTION REQUIRED',
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    letterSpacing: 0.3,
+                  ),
                 ),
               ),
-            ),
           ],
         ),
         const SizedBox(height: 12),
         _TaskCard(
-          icon: Icons.warning_rounded,
-          iconBg: AppColors.warningRedLight,
-          iconColor: AppColors.warningRed,
-          title: '${l10n.attendance} not marked',
-          subtitle: 'System deadline: 10:30 AM',
+          icon: hasAttendance ? Icons.check_circle_rounded : Icons.warning_rounded,
+          iconBg: hasAttendance ? AppColors.successGreenLight : AppColors.warningRedLight,
+          iconColor: hasAttendance ? AppColors.successGreen : AppColors.warningRed,
+          title: hasAttendance ? '${l10n.attendance} Marked' : '${l10n.attendance} not marked',
+          subtitle: hasAttendance ? 'Successfully submitted for today' : 'System deadline: 10:30 AM',
           onTap: () => context.go('/teacher/attendance'),
         ),
         const SizedBox(height: 10),

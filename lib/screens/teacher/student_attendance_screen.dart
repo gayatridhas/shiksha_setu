@@ -512,6 +512,13 @@ class _StudentAttendanceScreenState
 
             return Scaffold(
               backgroundColor: AppColors.backgroundGray,
+              floatingActionButton: FloatingActionButton.extended(
+                onPressed: () => _openAddStudentSheet(profile),
+                label: const Text('Add Student'),
+                icon: const Icon(Icons.person_add_alt_1_rounded),
+                backgroundColor: AppColors.navyPrimary,
+                foregroundColor: Colors.white,
+              ),
               body: Column(
                 children: [
                   SafeArea(
